@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-25 09:20
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-02 09:44
+ * @LastEditTime: 2022-07-02 20:52
  * @Description:
  */
 L.drawLocal = {
@@ -23,10 +23,10 @@ L.drawLocal = {
         text: "- your text-",
       },
       buttons: {
-        polyline: "- 线-",
-        polygon: "- 多边形-",
-        rectangle: "- 矩形-",
-        circle: "- your text-",
+        polyline: "线",
+        polygon: "多边形",
+        rectangle: "矩形",
+        circle: "画圆",
         marker: "- your text-",
         circlemarker: "- your text-",
       },
@@ -34,9 +34,9 @@ L.drawLocal = {
     handlers: {
       circle: {
         tooltip: {
-          start: "画圆",
+          start: "点击并拖动开始画圆",
         },
-        radius: "- your text-",
+        radius: "radius",
       },
       circlemarker: {
         tooltip: {
@@ -50,9 +50,9 @@ L.drawLocal = {
       },
       polygon: {
         tooltip: {
-          start: "多边形",
-          cont: "- your-.",
-          end: "- your text-.",
+          start: "单击开始绘制多边形",
+          cont: "单击继续绘制",
+          end: "双击完成绘制",
         },
       },
       polyline: {
@@ -65,7 +65,7 @@ L.drawLocal = {
       },
       rectangle: {
         tooltip: {
-          start: "矩形",
+          start: "单击并拖动开始绘制矩形",
         },
       },
       simpleshape: {

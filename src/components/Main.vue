@@ -13,6 +13,7 @@
   const url = "http://localhost:8090/iserver/services/map-ChengduFresh/rest/maps/ChengduMap"
   const map = ref(null)
   const editableLayers = ref(null)
+  editableLayers.value = L.featureGroup()
   // let map=null, editableLayers=null
 
   // 框选查询
@@ -24,11 +25,25 @@
   async function polygonSearch() {
     await startSearch(map.value, editableLayers.value, "polygon")
   }
-  const getShops = layer => {
-    console.log(layer)
-    console.log(map.value)
+
+  const getShops = features => {
+    editableLayers.value.clearLayers()
+
+    editableLayers.value = L.geoJSON(features, {
+      pointToLayer: function (point, latlng) {
+        return L.marker(latlng).bindPopup(`
+  <div class="shop">
+  <p>店名：${point.properties.NAME}</p>
+  <p>品类：${point.properties.CATEGORY}</p>
+  <p>价格：${point.properties.PRICE}元/kg</p>
+  </div>
+  `)
+      },
+    })
+
+    map.value.flyTo(L.latLng(features.features[0].geometry.coordinates.reverse()), 12)
     fullscreenLoading.value = false
-    layer.addTo(map.value)
+    editableLayers.value.addTo(map.value)
   }
   const mapInit = mapObject => {
     map.value = mapObject
@@ -40,7 +55,6 @@
         opacity: 0.7,
       })
       .addTo(map.value)
-    console.log("object")
   }
   onMounted(() => {
     // map = await mapObject('map')
@@ -59,6 +73,7 @@
     </div>
     <draw-map
       v-loading.fullscreen.lock="!map"
+      element-loading-text="地图加载中"
       v-if="map"
       :map="map"
       style="position: absolute"
@@ -99,5 +114,8 @@
     width: 40px;
     margin-left: 0;
     margin-bottom: 3px;
+  }
+  .leaflet-draw-draw-polygon {
+    background-image: none;
   }
 </style>

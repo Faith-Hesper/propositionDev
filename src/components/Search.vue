@@ -1,13 +1,14 @@
 <template>
   <div class="search">
     <el-autocomplete
-      v-model="search"
+      v-model.trim="shopName"
       :fetch-suggestions="querySearch"
       @select="handleSelect"
       @keyup.native.enter="shopSearch"
+      @change="change"
       popper-class="tips"
       clearable
-      placeholder="地区"
+      placeholder="请输入店名"
     >
     </el-autocomplete>
     <el-button type="primary" size="small" @click="shopSearch">搜索</el-button>
@@ -18,14 +19,13 @@
   import { searchBySql, getFieldsName } from "@/utils/map.js"
   import { ref, onMounted } from "vue"
   const emit = defineEmits(["shopDetail"])
+
   const Shops = ref([])
-  const search = ref("")
+  const shopName = ref("")
   const querySearch = (queryString, callback) => {
-    // console.log(queryString)
+    getShops(shopName.value)
     let result = queryString ? Shops.value.filter(createFilter(queryString)) : Shops.value
     callback(result)
-    console.log(Shops.value)
-    console.log(result)
   }
 
   const createFilter = queryString => {
@@ -35,40 +35,29 @@
   }
 
   const handleSelect = item => {
-    console.log(item)
+    shopSearch()
   }
 
+  const change = item => {
+    console.log(item)
+  }
   const shopSearch = async () => {
-    if (!search.value) return
-    let fetures = getShops()
-    console.log(Shops.value)
-    let resultlayer = L.geoJSON(fetures, {
-      pointToLayer: function (point, latlng) {
-        // console.log(point, latlng)
-        return L.marker(latlng).bindPopup(`
-  <div class="shop">
-  <p>店名：${point.properties.NAME}</p>
-  <p>品类：${point.properties.品类}</p>
-  <p>价格元KG：${point.properties.价格元KG}</p>
-  </div>
-  `)
-      },
-    })
-    emit("shopDetail", resultlayer)
+    if (!shopName.value) return
+    let fetures = await searchBySql(shopName.value, { toIndex: 30 })
+    emit("shopDetail", fetures)
   }
 
   // 获取商店数据
-  const getShops = async () => {
-    let fetures = await searchBySql().catch(err => console.log(err))
+  const getShops = async shops => {
+    let fetures = await searchBySql(shops)
     // console.log(fetures)
     Shops.value = fetures.features.map(data => {
-      return { value: data.properties.NAME, latlng: data.geometry.coordinates }
+      return { value: data.properties.NAME, name: data.properties.NAME }
     })
-    return fetures
   }
 
   onMounted(() => {
-    getShops()
+    getShops(shopName.value)
   })
   // const fields =async()=>{await getFieldsName()}
   // console.log(fields());

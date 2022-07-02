@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-01 21:38
+ * @LastEditTime: 2022-07-02 17:23
  * @Description:
  */
 
@@ -209,15 +209,18 @@ async function searchByGeometry(polygon) {
 }
 
 // sql查询
-async function searchBySql() {
+async function searchBySql(shop = "店", ...args) {
+  let queryParameter = {
+    name: "Shop",
+    attributeFilter: `Name like '%${shop}%'`,
+  }
+  let sqlParameters = {
+    queryParameter,
+    datasetNames: ["ChengduFresh:Shop"],
+  }
+  Object.assign(sqlParameters, ...args)
   const sqlParam = await new Promise(resolve => {
-    const params = new L.supermap.GetFeaturesBySQLParameters({
-      queryParameter: {
-        name: "Shop",
-        attributeFilter: "",
-      },
-      datasetNames: ["ChengduFresh:Shop"],
-    })
+    const params = new L.supermap.GetFeaturesBySQLParameters(sqlParameters)
     resolve(params)
   })
 
