@@ -2,29 +2,30 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-06-20 21:22
+ * @LastEditTime: 2022-07-01 21:38
  * @Description:
  */
 
-import { SuperMap, tiandituTileLayer } from '@supermap/iclient-leaflet'
-import 'leaflet-draw'
+import { SuperMap, tiandituTileLayer } from "@supermap/iclient-leaflet"
+import "leaflet-draw"
+// import "@/utils/L.draw-local"
 // leaflet-draw 1.0.4 绘制rectangle bug
 window.type = true
-const url = 'http://t0.tianditu.gov.cn/vec_c/wmts?'
-const dataUrl = 'http://localhost:8090/iserver/services/data-ChengduFresh/rest/data'
-let resultLayer
+const url = "http://t0.tianditu.gov.cn/vec_c/wmts?"
+const dataUrl = "http://localhost:8090/iserver/services/data-ChengduFresh/rest/data"
+// let resultLayer
 
 // 初始化地图对象
 async function mapObject(id) {
   return await new Promise((resolve, reject) => {
     const { baseMapLayer, map_crs, ...option } = BASE_CONFIG
     const crs = L.CRS[map_crs]
-    const layers = baseMapLayer.map((layer) => L.supermap.tiandituTileLayer(layer))
+    const layers = baseMapLayer.map(layer => L.supermap.tiandituTileLayer(layer))
     const options = { layers, crs, ...option }
     const map = L.map(id, options)
 
     resolve(map)
-  }).catch((err) => console.log(err))
+  }).catch(err => console.log(err))
 }
 
 async function mapControl(map) {
@@ -56,7 +57,7 @@ async function mapControl(map) {
       })
       .addTo(map)
     resolve(control)
-  }).catch((err) => console.log(err))
+  }).catch(err => console.log(err))
 }
 
 // 绘制
@@ -101,32 +102,37 @@ function draw(map) {
 async function startSearch(map, editableLayers, type) {
   // 清除前面已绘制图层和图标
   editableLayers.clearLayers()
-  resultLayer !== undefined ? resultLayer.clearLayers() : true
+  // resultLayer !== undefined ? resultLayer.clearLayers() : true
   switch (type) {
-    case 'rectangle':
+    case "rectangle":
       new L.Draw.Rectangle(map).enable()
       break
-    case 'polygon':
+    case "polygon":
       new L.Draw.Polygon(map).enable()
       break
     default:
       break
   }
   const layerInfo = await drawLayer(map, editableLayers)
-  resultLayer = await getSearchLayer(layerInfo)
-  resultLayer.addTo(map)
+  // let resultLayer = await getSearchLayer(layerInfo)
+  return resultLayer
 }
 
 // 获取绘制的图形的坐标
 async function drawLayer(map, editableLayers) {
-  return await new Promise((resolve) => {
-    map.on(L.Draw.Event.CREATED, function (e) {
+  return await new Promise(resolve => {
+    map.on("draw:created", e => {
       editableLayers.addLayer(e.layer)
       // console.log(e.layer)
       // const bounds = L.Util.transform(e.layer._bounds,L.CRS.EPSG3857,L.CRS.EPSG4326)
+      map.off("dblclick")
+      map.off("draw:drawstart")
       let layer = { type: e.layerType, layer: e.layer }
+      // getSearchLayer(layer)
       resolve(layer)
     })
+    map.off(L.Draw.Event.CREATED)
+    map.off(L.Draw)
   })
 }
 
@@ -139,10 +145,10 @@ async function getSearchLayer(drawLayer) {
   // 根据绘制图形进行范围查询
   let features
   switch (drawLayer.type) {
-    case 'rectangle':
+    case "rectangle":
       features = await searchByBounds(drawLayer.layer._bounds)
       break
-    case 'polygon':
+    case "polygon":
       features = await searchByGeometry(L.polygon(drawLayer.layer._latlngs))
       break
     default:
@@ -150,7 +156,7 @@ async function getSearchLayer(drawLayer) {
   }
 
   if (features == undefined) return
-  return await new Promise((resolve) => {
+  return await new Promise(resolve => {
     let resultLayer = L.geoJSON(features, {
       onEachFeature: function (feature, layer) {
         // console.log(feature.properties);
@@ -166,15 +172,15 @@ async function getSearchLayer(drawLayer) {
 // 范围查询
 async function searchByBounds(bounds) {
   // 范围查询参数
-  const boundsParam = await new Promise((resolve) => {
+  const boundsParam = await new Promise(resolve => {
     const params = new L.supermap.GetFeaturesByBoundsParameters({
-      datasetNames: ['ChengduFresh:Shop'],
+      datasetNames: ["ChengduFresh:Shop"],
       bounds: bounds,
     })
     resolve(params)
   })
 
-  return await new Promise((resolve) => {
+  return await new Promise(resolve => {
     L.supermap.featureService(dataUrl).getFeaturesByBounds(boundsParam, function (serviceResult) {
       resolve(serviceResult.result.features)
     })
@@ -185,15 +191,15 @@ async function searchByBounds(bounds) {
 // 几何查询
 async function searchByGeometry(polygon) {
   // 几何查询参数
-  const geometryParam = await new Promise((resolve) => {
+  const geometryParam = await new Promise(resolve => {
     const params = new L.supermap.GetFeaturesByGeometryParameters({
-      datasetNames: ['ChengduFresh:Shop'],
+      datasetNames: ["ChengduFresh:Shop"],
       geometry: polygon,
     })
     resolve(params)
   })
 
-  return await new Promise((resolve) => {
+  return await new Promise(resolve => {
     L.supermap
       .featureService(dataUrl)
       .getFeaturesByGeometry(geometryParam, function (serviceResult) {
@@ -204,18 +210,18 @@ async function searchByGeometry(polygon) {
 
 // sql查询
 async function searchBySql() {
-  const sqlParam = await new Promise((resolve) => {
+  const sqlParam = await new Promise(resolve => {
     const params = new L.supermap.GetFeaturesBySQLParameters({
       queryParameter: {
-        name: 'Shop',
-        attributeFilter: '',
+        name: "Shop",
+        attributeFilter: "",
       },
-      datasetNames: ['ChengduFresh:Shop'],
+      datasetNames: ["ChengduFresh:Shop"],
     })
     resolve(params)
   })
 
-  return await new Promise((resolve) =>
+  return await new Promise(resolve =>
     new L.supermap.FeatureService(dataUrl).getFeaturesBySQL(sqlParam, function (serviceResult) {
       resolve(serviceResult.result.features)
     })
@@ -223,23 +229,23 @@ async function searchBySql() {
 }
 
 // 查询字段信息
-async function getFieldsName(url = '') {
-  url = url == '' ? dataUrl : url
+async function getFieldsName(url = "") {
+  url = url == "" ? dataUrl : url
   return await new Promise((resolve, reject) => {
     const fieldsParam = new SuperMap.FieldParameters({
-      datasource: 'ChengduFresh',
-      dataset: 'Shop',
+      datasource: "ChengduFresh",
+      dataset: "Shop",
     })
-    L.supermap.fieldService(url).getFields(fieldsParam, (serviceResult) => {
+    L.supermap.fieldService(url).getFields(fieldsParam, serviceResult => {
       resolve(serviceResult.result.fieldNames)
     })
-  }).catch((err) => console.log(err))
+  }).catch(err => console.log(err))
 }
 
 function searchButton() {
-  const btnView = L.control({ position: 'topright' })
+  const btnView = L.control({ position: "topright" })
   btnView.onAdd = function () {
-    L.DomUtil.create('div', '')
+    L.DomUtil.create("div", "")
   }
 }
 
