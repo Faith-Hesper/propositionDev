@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-02 17:23
+ * @LastEditTime: 2022-07-03 21:53
  * @Description:
  */
 
@@ -13,6 +13,8 @@ import "leaflet-draw"
 window.type = true
 const url = "http://t0.tianditu.gov.cn/vec_c/wmts?"
 const dataUrl = "http://localhost:8090/iserver/services/data-ChengduFresh/rest/data"
+const spatialAnalysisUrl =
+  "http://localhost:8090/iserver/services/spatialAnalysis-Changchun/restjsr/spatialanalyst"
 // let resultLayer
 
 // 初始化地图对象
@@ -93,7 +95,7 @@ async function getSearchLayer(drawLayer) {
   })
 }
 
-// 范围查询
+// 范围查询、根据绘制的矩形查询矩形内的图层 从数据服务中查询
 async function searchByBounds(bounds) {
   // 范围查询参数
   const boundsParam = await new Promise(resolve => {
@@ -112,7 +114,7 @@ async function searchByBounds(bounds) {
   // return await Promise.all([boundsParam, resultLayer])
 }
 
-// 几何查询
+// 几何查询、根据绘制的几何对象查询几何对象对的图层 从数据服务中查询
 async function searchByGeometry(polygon) {
   // 几何查询参数
   const geometryParam = await new Promise(resolve => {
@@ -176,5 +178,31 @@ function searchButton() {
   }
 }
 
+// 几何对象缓冲区分析
+function bufferAnalyst(geometry) {
+  // 空间分析服务
+  let bufferAnalystService = new L.supermap.SpatialAnalystService(spatialAnalysisUrl)
+  // 缓冲区分析参数
+  let bufferSettings = new L.supermap.BufferSetting({
+    endType: L.supermap.BufferEndType.ROUND,
+    // leftDistance: new L.supermap.BufferDistance({ value: 250 }),
+    // rightDistance: new L.supermap.BufferDistance({ value: 250 }),
+    radiusUnit: L.supermap.BufferRadiusUnit.METER,
+    semicircleLineSegment: 3,
+  })
+  // 几何对象缓冲区参数
+  let geoBufferAnalystParams = new L.supermap.GeometryBufferAnalystParameters({
+    sourceGeometry: geometry,
+    sourceGeometrySRID: 4326,
+    bufferSetting: bufferSettings,
+  })
+  return new Promise(resolve => {
+    bufferAnalystService.bufferAnalysis(geoBufferAnalystParams, serviceResult => {
+      console.log(serviceResult)
+      resolve(serviceResult.result.resultGeometry)
+    })
+  })
+}
+
 export default mapObject
-export { mapControl, getSearchLayer, searchBySql, getFieldsName }
+export { mapControl, getSearchLayer, searchBySql, getFieldsName, bufferAnalyst }
