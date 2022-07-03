@@ -6,120 +6,119 @@
   </div>
 </template>
 
-<script>
+<script setup>
   // import * as L from 'leaflet'
   import "leaflet-draw"
   import "@/utils/L.draw-local"
-  import { mapControl, draw, startSearch, getSearchLayer } from "@/utils/map.js"
-  export default {
-    props: {
-      map: { type: Object, default: () => null },
-    },
-    data() {
-      return {
-        editableLayers: null,
-        drawControl: null,
-        drawlayer: null,
-      }
-    },
-    methods: {},
-    created() {
-      // console.log(this.map)
-      this.editableLayers = new L.featureGroup()
-      this.map.addLayer(this.editableLayers)
-      // this.drawControl = new L.Control.Draw({
-      //   position: "topright",
-      //   draw: {
-      //     rectangle: true,
-      //     polygon: true,
-      //     polyline: false,
-      //     marker: false,
-      //     circle: false,
-      //     circlemarker: false,
-      //   },
-      // })
-      // var tooltip = new L.Draw.Tooltip(this.map)
-      // console.log(tooltip)
-      // this.map.addControl(this.drawControl)
-      this.map.on("draw:created", this.drawCallBack)
-      this.map.on("draw:drawstop", e => {
-        // 取消前面 绘制、dbclick事件监听
-        this.map.off("draw:drawstart")
-        console.log(this.drawlayer)
-        getSearchLayer(this.drawlayer).then(layer => layer.addTo(this.map))
-        this.map.off("dblclick")
-        this.drawControl.disable()
-        // 开启双击 zoomin
-        this.map.doubleClickZoom.enable()
-      })
-    },
-    methods: {
-      async rectangleSearch() {
-        // let a = new L.Draw.Rectangle(this.map, { metric: false })
-        this.enableDraw("rectangle")
-        this.drawControl.enable()
-        // await startSearch(this.map, this.editableLayers, "rectangle")
-      },
-      async polygonSearch() {
-        // await startSearch(this.map, this.editableLayers, "polygon")
-        this.enableDraw("polygon")
-        this.map.doubleClickZoom.disable()
+  import { getSearchLayer } from "@/utils/map.js"
+  import { onUnmounted, reactive } from "vue"
+  const props = defineProps({
+    map: { type: Object, default: () => null },
+  })
+  const draw = reactive({
+    editableLayers: null,
+    drawControl: null,
+    drawlayer: null,
+  })
 
-        this.drawControl.enable()
-        this.map.on("dblclick", e => {
-          // 双击完成多边形绘制
-          this.drawControl.completeShape()
-        })
+  const options = {
+    polygon: {
+      allowIntersection: false, // Restricts shapes to simple polygons
+      drawError: {
+        color: "#e1e100", // Color the shape will turn when intersects
+        message: "<strong>Oh snap!<strong> you can't draw that!", // Message that will show when intersect
       },
-      enableDraw(type) {
-        switch (type) {
-          case "rectangle":
-            this.drawControl = new L.Draw.Rectangle(this.map, {
-              metric: false,
-              showArea: false,
-              shapeOptions: {
-                stroke: true,
-                color: "#0000FF",
-                weight: 4,
-                opacity: 0.5,
-                fill: true,
-                fillColor: null, //same as color by default
-                fillOpacity: 0.2,
-                clickable: true,
-              },
-            })
-            break
-          case "polygon":
-            this.drawControl = new L.Draw.Polygon(this.map)
-            break
-          case "circle":
-            this.drawControl = new L.Draw.Circle(this.map)
-            break
-          default:
-            break
-        }
-      },
-      drawCallBack(e) {
-        this.drawlayer = { type: e.layerType, layer: e.layer }
-        this.editableLayers.addLayer(e.layer)
-        // console.log(e.layer)
-        // const bounds = L.Util.transform(e.layer._bounds,L.CRS.EPSG3857,L.CRS.EPSG4326)
-        this.map.doubleClickZoom.disable()
-        // 取消前面dbclick事件监听
-        // this.map.off("dblclick")
-        this.map.on("dblclick", e => {
-          // 双击完成多边形绘制
-          this.drawControl.completeShape()
-        })
+      shapeOptions: {
+        color: "#bada55",
       },
     },
-
-    beforeUnmount() {
-      this.map.off("draw:drawstop")
-      this.map.doubleClickZoom.enable()
-      this.map.removeLayer(this.editableLayers)
+    rectangle: {
+      metric: false,
+      showArea: false,
+      shapeOptions: {
+        stroke: true,
+        color: "#0000FF",
+        weight: 4,
+        opacity: 0.5,
+        fill: true,
+        fillColor: null,
+        fillOpacity: 0.2,
+        clickable: true,
+      },
     },
   }
+
+  // 新建绘制图层
+  draw.editableLayers = new L.featureGroup()
+  // 将图层添加到map对象中
+  props.map.addLayer(draw.editableLayers)
+  // 监听绘制事件
+  props.map.on("draw:created", drawCallBack)
+  props.map.on("draw:drawstop", () => {
+    // 取消前面 绘制、dbclick事件监听
+    props.map.off("draw:drawstart")
+    console.log(draw.drawlayer)
+    // 查询图层中商店
+    getSearchLayer(draw.drawlayer).then(layer => draw.editableLayers.addLayer(layer))
+    props.map.off("dblclick")
+    draw.drawControl.disable()
+    // 开启双击 zoomin
+    props.map.doubleClickZoom.enable()
+  })
+
+  // draw 开启对应绘制
+  const enableDraw = type => {
+    switch (type) {
+      case "rectangle":
+        draw.drawControl = new L.Draw.Rectangle(props.map, options.rectangle)
+        break
+      case "polygon":
+        draw.drawControl = new L.Draw.Polygon(props.map, options.polygon)
+        break
+      case "circle":
+        draw.drawControl = new L.Draw.Circle(props.map)
+        break
+      default:
+        break
+    }
+  }
+
+  // 框选查询
+  async function rectangleSearch() {
+    // leaflet.draw 坑点：必须先创建 draw对应对象再 enable 否则报 ._tooltip is null
+    enableDraw("rectangle")
+    draw.drawControl.enable()
+  }
+
+  // 多边形查询
+  async function polygonSearch() {
+    enableDraw("polygon")
+    props.map.doubleClickZoom.disable()
+
+    draw.drawControl.enable()
+    props.map.on("dblclick", e => {
+      // 双击完成多边形绘制
+      draw.drawControl.completeShape()
+    })
+  }
+
+  // 将绘制的图层添加到绘制图层中，并保存图层信息
+  function drawCallBack(e) {
+    draw.drawlayer = { type: e.layerType, layer: e.layer }
+    draw.editableLayers.addLayer(e.layer)
+    // const bounds = L.Util.transform(e.layer._bounds,L.CRS.EPSG3857,L.CRS.EPSG4326)
+    props.map.doubleClickZoom.disable()
+    props.map.on("dblclick", () => {
+      // 双击完成多边形绘制
+      draw.drawControl.completeShape()
+    })
+  }
+
+  onUnmounted(() => {
+    props.map.off("draw:drawstop")
+    props.map.doubleClickZoom.enable()
+    props.map.removeLayer(draw.editableLayers)
+  })
 </script>
 
 <style scoped>
@@ -133,8 +132,6 @@
   .el-button {
     width: 48px;
     margin: 2px 0;
-  }
-  .leaflet-draw-draw-polygon {
-    background-image: none;
+    border-radius: 5px;
   }
 </style>

@@ -67,8 +67,6 @@
   .search {
     top: 0;
     // left: 50%;
-    /* width: 320px; */
-    margin-right: 200px;
     padding-bottom: 5px;
     display: flex;
     align-items: center;

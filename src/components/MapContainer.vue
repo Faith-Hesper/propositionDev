@@ -3,18 +3,20 @@
 </template>
 
 <script setup>
-  import { reactive, ref, onMounted } from "vue"
+  import { reactive, onMounted } from "vue"
   import { SuperMap, tiandituTileLayer } from "@supermap/iclient-leaflet"
 
-  const url = "http://localhost:8090/iserver/services/map-ChengduFresh/rest/maps/ChengduMap"
-  const map = ref(null)
+  const MyCustomMap = reactive({
+    map: null,
+    baselayers: null,
+  })
   const props = defineProps({
     crs: { type: String, default: "EPSG4326" },
     control: { type: Boolean, default: true },
     baseLayers: { type: Array, default: () => [] },
     options: { type: Object, default: null },
   })
-  const emit = defineEmits(["map-created"])
+  const emit = defineEmits(["map-created", "mapControl"])
 
   onMounted(() => {
     const { baseMapLayer, map_crs, ...option } = BASE_CONFIG
@@ -26,22 +28,32 @@
     } else {
       layers = baseMapLayer.map(layer => new L.supermap.tiandituTileLayer(layer))
     }
+
+    let baselayer = {
+      "中国地图": L.featureGroup(layers),
+    }
+
     const options = { layers, crs, ...option }
+
     // 将传入的options 复制到 options中
     Object.assign(options, props.options)
-    map.value = L.map("map", options)
-    let baselayer = {
-      "中国地图": L.featureGroup(layers).addTo(map.value),
-    }
-    let overlayer = L.featureGroup()
-    layers.map(layer => map.value.addLayer(layer))
-    props.control
-      ? L.control
-          .layers(baselayer, { "drawlayer": overlayer }, { position: "topright", collapsed: true })
-          .addTo(map.value)
-      : null
+    MyCustomMap.baselayers = baselayer
+    MyCustomMap.map = L.map("map", options)
+
+    // MyCustomMap.map.addLayer(baselayer)
+    // let baselayer = {
+    //   "中国地图": L.featureGroup(layers).addTo(MyCustomMap.map),
+    // }
+    // L.featureGroup(layers).addTo(MyCustomMap.map)
+    // let overlayer = L.featureGroup()
+    // layers.map(layer => MyCustomMap.map.addLayer(layer))
+    // props.control
+    //   ? (MyCustomMap.control = L.control
+    //       .layers(baselayer, { "drawlayer": overlayer }, { position: "topright", collapsed: true })
+    //       .addTo(MyCustomMap.map))
+    //   : null
     // L.control.layers(baselayer).addTo(map.value)
-    emit("map-created", map.value)
+    emit("map-created", MyCustomMap)
   })
 </script>
 

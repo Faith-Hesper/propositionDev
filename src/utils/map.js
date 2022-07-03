@@ -60,82 +60,6 @@ async function mapControl(map) {
   }).catch(err => console.log(err))
 }
 
-// 绘制
-function draw(map) {
-  // 新建编辑图层
-  const editableLayers = new L.featureGroup()
-  map.addLayer(editableLayers)
-
-  // const drawControl = new L.Control.Draw({
-  //   draw: {
-  //     //绘制线
-  //     polyline: true,
-  //     //绘制多边形
-  //     polygon: true,
-  //     //绘制矩形
-  //     rectangle: {
-  //       shapeOptions: {
-  //         color: '#0000FF',
-  //       },
-  //     },
-  //     //绘制圆
-  //     circle: true,
-  //     //绘制标注
-  //     marker: false,
-  //     //绘制圆形标注
-  //     circlemarker: false,
-  //   },
-  //   edit: {
-  //     featureGroup: editableLayers,
-  //   },
-  // })
-
-  // // 添加绘制控件
-  // map.addControl(drawControl)
-
-  return editableLayers
-
-  // console.log(drawLayer);
-}
-
-// 查询出绘制范围内地物
-async function startSearch(map, editableLayers, type) {
-  // 清除前面已绘制图层和图标
-  editableLayers.clearLayers()
-  // resultLayer !== undefined ? resultLayer.clearLayers() : true
-  switch (type) {
-    case "rectangle":
-      new L.Draw.Rectangle(map).enable()
-      break
-    case "polygon":
-      new L.Draw.Polygon(map).enable()
-      break
-    default:
-      break
-  }
-  const layerInfo = await drawLayer(map, editableLayers)
-  // let resultLayer = await getSearchLayer(layerInfo)
-  return resultLayer
-}
-
-// 获取绘制的图形的坐标
-async function drawLayer(map, editableLayers) {
-  return await new Promise(resolve => {
-    map.on("draw:created", e => {
-      editableLayers.addLayer(e.layer)
-      // console.log(e.layer)
-      // const bounds = L.Util.transform(e.layer._bounds,L.CRS.EPSG3857,L.CRS.EPSG4326)
-      map.off("dblclick")
-      map.off("draw:drawstart")
-      let layer = { type: e.layerType, layer: e.layer }
-      // getSearchLayer(layer)
-      resolve(layer)
-    })
-    map.off(L.Draw.Event.CREATED)
-    map.off(L.Draw)
-  })
-}
-
 /**
  *
  * @param {*} drawLayer 绘制的图层
@@ -253,4 +177,4 @@ function searchButton() {
 }
 
 export default mapObject
-export { mapControl, draw, drawLayer, startSearch, getSearchLayer, searchBySql, getFieldsName }
+export { mapControl, getSearchLayer, searchBySql, getFieldsName }

@@ -2,7 +2,7 @@
   import MapContainer from "@/components/MapContainer"
   import Search from "@/components/Search"
   import DrawMap from "@/components/DrawMap"
-  import { mapControl, draw, startSearch } from "@/utils/map.js"
+  import { mapControl } from "@/utils/map.js"
   import { nextTick, onMounted, reactive, ref } from "vue"
 
   defineProps({
@@ -11,25 +11,41 @@
 
   const fullscreenLoading = ref(false)
   const url = "http://localhost:8090/iserver/services/map-ChengduFresh/rest/maps/ChengduMap"
-  const map = ref(null)
-  const editableLayers = ref(null)
-  editableLayers.value = L.featureGroup()
-  // let map=null, editableLayers=null
+  const MyCustomMap = reactive({
+    map: null,
+    control: null,
+    editableLayers: null,
+  })
 
-  // 框选查询
-  async function rectangleSearch() {
-    await startSearch(map.value, editableLayers.value, "rectangle")
-  }
+  MyCustomMap.editableLayers = L.featureGroup()
 
-  // 几何多边形查询
-  async function polygonSearch() {
-    await startSearch(map.value, editableLayers.value, "polygon")
+  const mapInit = mapObject => {
+    MyCustomMap.map = mapObject.map
+
+    let overlayer = L.supermap
+      .tiledMapLayer(url, {
+        cacheEnabled: true,
+        transparent: true,
+        opacity: 0.7,
+      })
+      .addTo(MyCustomMap.map)
+
+    MyCustomMap.control = L.control
+      .layers(
+        { "成都地图": overlayer },
+        {
+          "drawlayer": MyCustomMap.editableLayers,
+        },
+        { position: "topright", collapsed: true }
+      )
+      .addTo(MyCustomMap.map)
+    // MyCustomMap.control.addBaseLayer(overlayer, "成都")
   }
 
   const getShops = features => {
-    editableLayers.value.clearLayers()
+    MyCustomMap.editableLayers.clearLayers()
 
-    editableLayers.value = L.geoJSON(features, {
+    let layers = L.geoJSON(features, {
       pointToLayer: function (point, latlng) {
         return L.marker(latlng).bindPopup(`
   <div class="shop">
@@ -41,21 +57,12 @@
       },
     })
 
-    map.value.flyTo(L.latLng(features.features[0].geometry.coordinates.reverse()), 12)
     fullscreenLoading.value = false
-    editableLayers.value.addTo(map.value)
+    MyCustomMap.map.flyTo(L.latLng(features.features[0].geometry.coordinates.reverse()), 12)
+    MyCustomMap.editableLayers.addLayer(layers)
+    MyCustomMap.editableLayers.addTo(MyCustomMap.map)
   }
-  const mapInit = mapObject => {
-    map.value = mapObject
-    // console.log(map..value);
-    L.supermap
-      .tiledMapLayer(url, {
-        cacheEnabled: true,
-        transparent: true,
-        opacity: 0.7,
-      })
-      .addTo(map.value)
-  }
+
   onMounted(() => {
     // map = await mapObject('map')
     // let control = mapControl(map)
@@ -71,14 +78,14 @@
     <div id="toolbar">
       <Search @shopDetail="getShops"></Search>
     </div>
-    <draw-map
-      v-loading.fullscreen.lock="!map"
+    <DrawMap v-if="MyCustomMap.map" :map="MyCustomMap.map" style="position: absolute"></DrawMap>
+    <MapContainer
+      v-loading.fullscreen.lock="!MyCustomMap.map"
       element-loading-text="地图加载中"
-      v-if="map"
-      :map="map"
+      @map-created="mapInit"
       style="position: absolute"
-    ></draw-map>
-    <map-container @map-created="mapInit" style="position: absolute"></map-container>
+    >
+    </MapContainer>
     <!-- <div id="map" style="width: 800px; height: 600px;"></div> -->
   </div>
 </template>
@@ -86,22 +93,22 @@
 <style scoped>
   .main {
     width: 100%;
-    height: 600px;
+    height: 700px;
   }
   #toolbar {
     position: relative;
     display: flex;
-    right: 0;
+    left: 60%;
+    width: 250px;
     flex-direction: column;
-    padding: 0 5px;
-    align-items: flex-end;
+    padding: 5px 5px;
+    align-items: center;
     text-align: center;
     z-index: 5;
-    border-radius: 4px;
   }
   /* .draw-box {
-  /* width: 200px; 
-} */
+    /* width: 200px;
+  } */
   .button {
     margin-top: 50px;
     display: flex;
@@ -114,8 +121,5 @@
     width: 40px;
     margin-left: 0;
     margin-bottom: 3px;
-  }
-  .leaflet-draw-draw-polygon {
-    background-image: none;
   }
 </style>
