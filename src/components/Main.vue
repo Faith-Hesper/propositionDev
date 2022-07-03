@@ -5,10 +5,6 @@
   import { mapControl } from "@/utils/map.js"
   import { nextTick, onMounted, reactive, ref } from "vue"
 
-  defineProps({
-    msg: String,
-  })
-
   const fullscreenLoading = ref(false)
   const url = "http://localhost:8090/iserver/services/map-ChengduFresh/rest/maps/ChengduMap"
   const MyCustomMap = reactive({
@@ -19,6 +15,7 @@
 
   MyCustomMap.editableLayers = L.featureGroup()
 
+  // 添加图层切换控件
   const mapInit = mapObject => {
     MyCustomMap.map = mapObject.map
 
@@ -42,6 +39,7 @@
     // MyCustomMap.control.addBaseLayer(overlayer, "成都")
   }
 
+  // 商店markers绑定数据
   const getShops = features => {
     MyCustomMap.editableLayers.clearLayers()
 
@@ -75,7 +73,7 @@
 
 <template>
   <div class="main">
-    <div id="toolbar">
+    <div class="toolbar">
       <Search @shopDetail="getShops"></Search>
     </div>
     <DrawMap v-if="MyCustomMap.map" :map="MyCustomMap.map" style="position: absolute"></DrawMap>
@@ -95,7 +93,7 @@
     width: 100%;
     height: 700px;
   }
-  #toolbar {
+  .toolbar {
     position: relative;
     display: flex;
     left: 60%;
@@ -105,21 +103,5 @@
     align-items: center;
     text-align: center;
     z-index: 5;
-  }
-  /* .draw-box {
-    /* width: 200px;
-  } */
-  .button {
-    margin-top: 50px;
-    display: flex;
-    flex-direction: column;
-    justify-items: center;
-    align-content: center;
-    align-items: center;
-  }
-  .el-button {
-    width: 40px;
-    margin-left: 0;
-    margin-bottom: 3px;
   }
 </style>

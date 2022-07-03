@@ -40,19 +40,6 @@
     MyCustomMap.baselayers = baselayer
     MyCustomMap.map = L.map("map", options)
 
-    // MyCustomMap.map.addLayer(baselayer)
-    // let baselayer = {
-    //   "中国地图": L.featureGroup(layers).addTo(MyCustomMap.map),
-    // }
-    // L.featureGroup(layers).addTo(MyCustomMap.map)
-    // let overlayer = L.featureGroup()
-    // layers.map(layer => MyCustomMap.map.addLayer(layer))
-    // props.control
-    //   ? (MyCustomMap.control = L.control
-    //       .layers(baselayer, { "drawlayer": overlayer }, { position: "topright", collapsed: true })
-    //       .addTo(MyCustomMap.map))
-    //   : null
-    // L.control.layers(baselayer).addTo(map.value)
     emit("map-created", MyCustomMap)
   })
 </script>

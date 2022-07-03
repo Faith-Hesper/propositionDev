@@ -107,7 +107,6 @@
     draw.drawlayer = { type: e.layerType, layer: e.layer }
     draw.editableLayers.addLayer(e.layer)
     // const bounds = L.Util.transform(e.layer._bounds,L.CRS.EPSG3857,L.CRS.EPSG4326)
-    props.map.doubleClickZoom.disable()
     props.map.on("dblclick", () => {
       // 双击完成多边形绘制
       draw.drawControl.completeShape()
@@ -135,3 +134,5 @@
     border-radius: 5px;
   }
 </style>
+
+/* TODo: 点击popup关闭后，改变zoom报 Uncaught TypeError: this._map is null * */
