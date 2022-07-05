@@ -17,7 +17,7 @@
 
 <script setup>
   import { searchBySql, getFieldsName } from "@/utils/map.js"
-  import { ref, onMounted } from "vue"
+  import { ref } from "vue"
   const emit = defineEmits(["shopDetail"])
 
   const Shops = ref([])
@@ -41,6 +41,8 @@
   const change = item => {
     console.log(item)
   }
+
+  // 搜索商店信息
   const shopSearch = async () => {
     if (!shopName.value) return
     let fetures = await searchBySql(shopName.value, { toIndex: 30 })
@@ -56,9 +58,8 @@
     })
   }
 
-  onMounted(() => {
-    getShops(shopName.value)
-  })
+  getShops(shopName.value)
+
   // const fields =async()=>{await getFieldsName()}
   // console.log(fields());
 </script>

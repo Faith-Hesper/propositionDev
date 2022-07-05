@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-03 21:53
+ * @LastEditTime: 2022-07-05 20:26
  * @Description:
  */
 
@@ -205,4 +205,12 @@ function bufferAnalyst(geometry) {
 }
 
 export default mapObject
-export { mapControl, getSearchLayer, searchBySql, getFieldsName, bufferAnalyst }
+export {
+  mapControl,
+  getSearchLayer,
+  searchByBounds,
+  searchByGeometry,
+  searchBySql,
+  getFieldsName,
+  bufferAnalyst,
+}
