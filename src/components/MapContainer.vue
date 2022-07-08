@@ -3,10 +3,10 @@
 </template>
 
 <script setup>
-  import { reactive, onMounted } from "vue"
+  import { reactive, onMounted, shallowReactive } from "vue"
   import { SuperMap, tiandituTileLayer } from "@supermap/iclient-leaflet"
 
-  const MyCustomMap = reactive({
+  const MyCustomMap = shallowReactive({
     map: null,
     baselayers: null,
   })
