@@ -53,6 +53,7 @@
     // 取消前面 绘制、dbclick事件监听
     props.map.off("draw:drawstart", drawCallBack)
     props.map.off("dblclick", complete)
+    // props.map.off("draw:drawstop")
     draw.drawControl.disable()
     emitLayer(draw.type, draw.editableLayers)
   })

@@ -2,7 +2,7 @@
   <div class="draw-btn">
     <el-button plain size="small" @click="rectangleSearch">框选</el-button>
     <el-button plain size="small" @click="polygonSearch">多边形</el-button>
-    <el-button plain size="small" @click="rectangleSearch">画圆</el-button>
+    <el-button plain size="small" @click="mapMarker">标记</el-button>
   </div>
 </template>
 
@@ -10,7 +10,7 @@
   // import * as L from 'leaflet'
   import "leaflet-draw"
   import "@/utils/L.draw-local"
-  import { getSearchLayer } from "@/utils/map.js"
+  import { getSearchLayer, bufferAnalyst } from "@/utils/map.js"
   import { onUnmounted, reactive } from "vue"
   const props = defineProps({
     map: { type: Object, default: () => null },
@@ -54,12 +54,14 @@
   props.map.addLayer(draw.editableLayers)
   // 监听绘制事件
   props.map.on("draw:created", drawCallBack)
-  props.map.on("draw:drawstop", () => {
+  props.map.on("draw:drawstop", async () => {
     // 取消前面 绘制、dbclick事件监听
     props.map.off("draw:drawstart")
-    console.log(draw.drawlayer)
+    let a = await bufferAnalyst(draw.drawlayer.layer)
+    console.log(a)
+    draw.editableLayers.addLayer(L.geoJSON(a))
     // 查询图层中商店
-    getSearchLayer(draw.drawlayer).then(layer => draw.editableLayers.addLayer(layer))
+    // getSearchLayer(draw.drawlayer).then(layer => draw.editableLayers.addLayer(layer))
     props.map.off("dblclick")
     draw.drawControl.disable()
     // 开启双击 zoomin
@@ -75,8 +77,8 @@
       case "polygon":
         draw.drawControl = new L.Draw.Polygon(props.map, options.polygon)
         break
-      case "circle":
-        draw.drawControl = new L.Draw.Circle(props.map)
+      case "marker":
+        draw.drawControl = new L.Draw.Marker(props.map)
         break
       default:
         break
@@ -102,12 +104,16 @@
     })
   }
 
+  function mapMarker() {
+    enableDraw("marker")
+    draw.drawControl.enable()
+  }
+
   // 将绘制的图层添加到绘制图层中，并保存图层信息
   function drawCallBack(e) {
     draw.drawlayer = { type: e.layerType, layer: e.layer }
     draw.editableLayers.addLayer(e.layer)
     // const bounds = L.Util.transform(e.layer._bounds,L.CRS.EPSG3857,L.CRS.EPSG4326)
-    props.map.doubleClickZoom.disable()
     props.map.on("dblclick", () => {
       // 双击完成多边形绘制
       draw.drawControl.completeShape()
@@ -135,3 +141,5 @@
     border-radius: 5px;
   }
 </style>
+
+/* TODo: 点击popup关闭后，改变zoom报 Uncaught TypeError: this._map is null * */

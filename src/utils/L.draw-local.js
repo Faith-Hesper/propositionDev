@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-25 09:20
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-02 20:52
+ * @LastEditTime: 2022-07-03 19:02
  * @Description:
  */
 L.drawLocal = {
@@ -27,7 +27,7 @@ L.drawLocal = {
         polygon: "多边形",
         rectangle: "矩形",
         circle: "画圆",
-        marker: "- your text-",
+        marker: "marker",
         circlemarker: "- your text-",
       },
     },
@@ -45,7 +45,7 @@ L.drawLocal = {
       },
       marker: {
         tooltip: {
-          start: "- your text-.",
+          start: "标记",
         },
       },
       polygon: {

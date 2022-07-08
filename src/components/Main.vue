@@ -3,8 +3,8 @@
   import Search from "@/components/Search"
   import DrawMap from "@/components/DrawMap"
   import DrawMapBtn from "@/components/DrawMapBtn"
-  import { mapControl, searchByBounds, searchByGeometry } from "@/utils/map.js"
-  import { nextTick, onMounted, reactive, ref } from "vue"
+  import { searchByBounds, searchByGeometry } from "@/utils/map.js"
+  import { nextTick, onMounted, reactive, ref, shallowReactive } from "vue"
 
   const fullscreenLoading = ref(false)
   const show = ref(true)
@@ -27,7 +27,7 @@
     },
   ]
 
-  const MyCustomMap = reactive({
+  const MyCustomMap = shallowReactive({
     map: null,
     control: null,
     editableLayers: null,
