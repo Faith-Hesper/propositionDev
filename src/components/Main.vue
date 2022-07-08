@@ -2,15 +2,31 @@
   import MapContainer from "@/components/MapContainer"
   import Search from "@/components/Search"
   import DrawMap from "@/components/DrawMap"
-  import { mapControl } from "@/utils/map.js"
+  import DrawMapBtn from "@/components/DrawMapBtn"
+  import { mapControl, searchByBounds, searchByGeometry } from "@/utils/map.js"
   import { nextTick, onMounted, reactive, ref } from "vue"
 
-  defineProps({
-    msg: String,
-  })
-
   const fullscreenLoading = ref(false)
+  const show = ref(true)
   const url = "http://localhost:8090/iserver/services/map-ChengduFresh/rest/maps/ChengduMap"
+  const drawBtns = [
+    {
+      id: 0,
+      name: "框选",
+      type: "rectangle",
+    },
+    {
+      id: 1,
+      name: "多边形",
+      type: "polygon",
+    },
+    {
+      id: 2,
+      name: "marker",
+      type: "marker",
+    },
+  ]
+
   const MyCustomMap = reactive({
     map: null,
     control: null,
@@ -19,6 +35,7 @@
 
   MyCustomMap.editableLayers = L.featureGroup()
 
+  // 添加图层切换控件
   const mapInit = mapObject => {
     MyCustomMap.map = mapObject.map
 
@@ -42,25 +59,57 @@
     // MyCustomMap.control.addBaseLayer(overlayer, "成都")
   }
 
+  // 商店markers绑定数据
   const getShops = features => {
     MyCustomMap.editableLayers.clearLayers()
 
-    let layers = L.geoJSON(features, {
-      pointToLayer: function (point, latlng) {
-        return L.marker(latlng).bindPopup(`
-  <div class="shop">
-  <p>店名：${point.properties.NAME}</p>
-  <p>品类：${point.properties.CATEGORY}</p>
-  <p>价格：${point.properties.PRICE}元/kg</p>
-  </div>
-  `)
-      },
-    })
+    let layers = geoJsonBind(features)
 
     fullscreenLoading.value = false
     MyCustomMap.map.flyTo(L.latLng(features.features[0].geometry.coordinates.reverse()), 12)
     MyCustomMap.editableLayers.addLayer(layers)
     MyCustomMap.editableLayers.addTo(MyCustomMap.map)
+  }
+
+  const drawLayer = resultLayer => {
+    show.value = true
+    MyCustomMap.editableLayers.addLayer(resultLayer).addTo(MyCustomMap.map)
+  }
+
+  // 框选查询
+  const rectangleLayer = async resultLayer => {
+    MyCustomMap.editableLayers.addLayer(resultLayer).addTo(MyCustomMap.map)
+    // console.log(resultLayer._bounds)
+    let features = await searchByBounds(resultLayer._bounds)
+    let layer = geoJsonBind(features)
+    MyCustomMap.editableLayers.addLayer(layer)
+  }
+
+  // 多边形查询
+  const polygonLayer = async resultLayer => {
+    MyCustomMap.editableLayers.addLayer(resultLayer).addTo(MyCustomMap.map)
+    // console.log(resultLayer)
+    let features = await searchByGeometry(L.polygon(resultLayer._latlngs))
+    let layer = geoJsonBind(features)
+    MyCustomMap.editableLayers.addLayer(layer)
+  }
+
+  const markerLayer = async resultLayer => {
+    MyCustomMap.editableLayers.addLayer(resultLayer).addTo(MyCustomMap.map)
+  }
+
+  const geoJsonBind = features => {
+    return L.geoJSON(features, {
+      pointToLayer: function (feature, latlng) {
+        return L.marker(latlng).bindPopup(`
+  <div class="shop">
+  <p>店名：${feature.properties.NAME}</p>
+  <p>品类：${feature.properties.CATEGORY}</p>
+  <p>价格：${feature.properties.PRICE}元/kg</p>
+  </div>
+  `)
+      },
+    })
   }
 
   onMounted(() => {
@@ -75,10 +124,18 @@
 
 <template>
   <div class="main">
-    <div id="toolbar">
+    <div class="toolbar">
       <Search @shopDetail="getShops"></Search>
     </div>
-    <DrawMap v-if="MyCustomMap.map" :map="MyCustomMap.map" style="position: absolute"></DrawMap>
+    <div class="drawBar">
+      <DrawMapBtn
+        v-if="MyCustomMap.map"
+        :map="MyCustomMap.map"
+        @rectangleLayer="rectangleLayer"
+        @polygonLayer="polygonLayer"
+        @markerLayer="markerLayer"
+      ></DrawMapBtn>
+    </div>
     <MapContainer
       v-loading.fullscreen.lock="!MyCustomMap.map"
       element-loading-text="地图加载中"
@@ -86,7 +143,6 @@
       style="position: absolute"
     >
     </MapContainer>
-    <!-- <div id="map" style="width: 800px; height: 600px;"></div> -->
   </div>
 </template>
 
@@ -95,7 +151,7 @@
     width: 100%;
     height: 700px;
   }
-  #toolbar {
+  .toolbar {
     position: relative;
     display: flex;
     left: 60%;
@@ -106,20 +162,10 @@
     text-align: center;
     z-index: 5;
   }
-  /* .draw-box {
-    /* width: 200px;
-  } */
-  .button {
-    margin-top: 50px;
-    display: flex;
-    flex-direction: column;
-    justify-items: center;
-    align-content: center;
-    align-items: center;
-  }
-  .el-button {
-    width: 40px;
-    margin-left: 0;
-    margin-bottom: 3px;
+  .drawBar {
+    position: absolute;
+    right: 0;
+    margin: 30px 0 10px 0;
+    z-index: 5;
   }
 </style>
