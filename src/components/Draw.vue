@@ -1,6 +1,13 @@
 <template>
-  <div class="draw-btn" v-for="draw in drawBtns" :key="draw.id">
-    <el-button plain size="small" @click="drawEvent(draw.type)">{{ draw.name }}</el-button>
+  <div class="draw-btn">
+    <el-button
+      v-for="draw in drawBtns"
+      :key="draw.id"
+      plain
+      size="small"
+      @click="drawEvent(draw.type)"
+      >{{ draw.name }}</el-button
+    >
   </div>
 </template>
 
@@ -46,19 +53,26 @@
     },
   }
 
-  // 监听绘制事件 vue3Proxy原因
-  props.map.on("draw:created", drawCallBack)
-  props.map.on("draw:drawstop", () => {
-    // 取消前面 绘制、dbclick事件监听
-    props.map.off("draw:drawstart", drawCallBack)
-    props.map.off("dblclick", complete)
-    // props.map.off("draw:drawstop")
-    draw.drawControl.disable()
-    emitLayer(draw.type, draw.editableLayers)
-  })
+  let index = 0
+  function watchDraw() {
+    // 监听绘制事件 vue3Proxy原因
+    props.map.on("draw:created", drawCallBack)
+    props.map.on("draw:drawstop", () => {
+      if (index) {
+        // 取消前面 绘制、dbclick事件监听
+        props.map.off("draw:drawstart", drawCallBack)
+        props.map.off("dblclick", complete)
+        // props.map.off("draw:drawstop")
+        draw.drawControl.disable()
+        emitLayer(draw.type, draw.editableLayers)
+        index = 0
+      }
+    })
+  }
 
   function drawEvent(type) {
     // draw.drawControl = this.enableDraw(type)
+    watchDraw()
     enableDraw(type)
     draw.drawControl.enable()
     draw.type = type
@@ -86,6 +100,7 @@
 
   // 将绘制的图层添加到绘制图层中，并保存图层信息
   function drawCallBack(e) {
+    index++
     draw.type = e.layerType
     draw.editableLayers = e.layer
     // const bounds = L.Util.transform(e.layer._bounds,L.CRS.EPSG3857,L.CRS.EPSG4326)
@@ -118,7 +133,7 @@
   .draw-btn {
     display: flex;
     flex-direction: column;
-    margin: 100px 10px 10px 0;
+    margin: 40px 10px 10px 0;
     right: 0;
     z-index: 5;
   }

@@ -85,6 +85,7 @@
 
   // 框选查询
   const rectangleLayer = async resultLayer => {
+    console.log(MyCustomMap.editableLayers._layers)
     fullscreenLoading.value = true
     MyCustomMap.editableLayers.clearLayers()
     MyCustomMap.editableLayers.addLayer(resultLayer).addTo(MyCustomMap.map)
