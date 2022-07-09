@@ -2,20 +2,15 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-09 17:40
+ * @LastEditTime: 2022-07-09 18:09
  * @Description:
  */
 
 import { SuperMap, tiandituTileLayer } from "@supermap/iclient-leaflet"
-import "leaflet-draw"
+// import "leaflet-draw"
 // import "@/utils/L.draw-local"
 // leaflet-draw 1.0.4 绘制rectangle bug
 window.type = true
-const url = "http://t0.tianditu.gov.cn/vec_c/wmts?"
-const dataUrl = "http://localhost:8090/iserver/services/data-ChengduFresh/rest/data"
-const spatialAnalysisUrl =
-  "http://localhost:8090/iserver/services/spatialAnalysis-Changchun/restjsr/spatialanalyst"
-// let resultLayer
 
 // 初始化地图对象
 async function mapObject(id) {
@@ -80,6 +75,8 @@ async function searchBySql(shop = "店", ...args) {
   let sqlParameters = {
     queryParameter,
     datasetNames: ["ChengduFresh:Shop"],
+    fromIndex: 0,
+    toIndex: 19,
   }
   Object.assign(sqlParameters, ...args)
   const sqlParam = await new Promise(resolve => {
@@ -90,8 +87,11 @@ async function searchBySql(shop = "店", ...args) {
   return await new Promise(resolve =>
     new L.supermap.FeatureService(BASE_CONFIG.BASEURL.dataUrl).getFeaturesBySQL(
       sqlParam,
-      function (serviceResult) {
-        resolve(serviceResult.result.features)
+      serviceResult => {
+        resolve({
+          totalCount: serviceResult.result.totalCount,
+          features: serviceResult.result.features,
+        })
       }
     )
   )
@@ -99,7 +99,7 @@ async function searchBySql(shop = "店", ...args) {
 
 // 查询字段信息
 async function getFieldsName(url = "") {
-  url = url == "" ? dataUrl : url
+  url = url == "" ? BASE_CONFIG.BASEURL.dataUrl : url
   return await new Promise((resolve, reject) => {
     const fieldsParam = new SuperMap.FieldParameters({
       datasource: "ChengduFresh",

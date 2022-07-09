@@ -1,6 +1,7 @@
 <script setup>
   import MapContainer from "@/components/MapContainer"
   import Search from "@/components/Search"
+  import Draw from "@/components/Draw"
   import DrawMap from "@/components/DrawMap"
   import DrawMapBtn from "@/components/DrawMapBtn"
   import {
@@ -216,13 +217,14 @@
       <Search @shopDetail="getShops"></Search>
     </div>
     <div class="drawBar">
-      <DrawMapBtn
+      <Draw
         v-if="MyCustomMap.map"
         :map="MyCustomMap.map"
+        :drawBtns="drawBtns"
         @rectangleLayer="rectangleLayer"
         @polygonLayer="polygonLayer"
         @markerLayer="markerLayer"
-      ></DrawMapBtn>
+      ></Draw>
     </div>
     <MapContainer
       v-loading.fullscreen.lock="!MyCustomMap.map"

@@ -45,15 +45,18 @@
   // 搜索商店信息
   const shopSearch = async () => {
     if (!shopName.value) return
-    let fetures = await searchBySql(shopName.value, { toIndex: 30 })
-    emit("shopDetail", fetures)
+    let { totalCount, features } = await searchBySql(shopName.value, { toIndex: 30 })
+    // if(totalCount>32){
+    //   await searchBySql(shopName.value, {fromIndex: 30 },{ toIndex: 1000 })
+    // }
+    emit("shopDetail", features)
   }
 
-  // 获取商店数据
+  // 输入框获取商店数据
   const getShops = async shops => {
-    let fetures = await searchBySql(shops)
+    let { features } = await searchBySql(shops)
     // console.log(fetures)
-    Shops.value = fetures.features.map(data => {
+    Shops.value = features.features.map(data => {
       return { value: data.properties.NAME, name: data.properties.NAME }
     })
   }
