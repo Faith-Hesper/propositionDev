@@ -19,7 +19,9 @@
   const emit = defineEmits(["map-created", "mapControl"])
 
   onMounted(() => {
-    const { baseMapLayer, map_crs, ...option } = BASE_CONFIG
+    const {
+      MAP: { baseMapLayer, map_crs, ...option },
+    } = BASE_CONFIG
     const crs = typeof props.crs === "string" ? L.CRS[props.crs] : L.CRS[map_crs]
     if (crs === undefined) throw new Error("不支持坐标系", props.crs)
     let layers = []

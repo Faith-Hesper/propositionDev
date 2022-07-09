@@ -3,7 +3,7 @@
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
 <<<<<<< HEAD
- * @LastEditTime: 2022-07-07 19:48
+ * @LastEditTime: 2022-07-09 16:20
 =======
  * @LastEditTime: 2022-07-05 20:26
 >>>>>>> d9dd78f0ecd719defca2c1faf705361a9b8d180f
@@ -34,71 +34,6 @@ async function mapObject(id) {
   }).catch(err => console.log(err))
 }
 
-async function mapControl(map) {
-  return await new Promise((resolve, reject) => {
-    // // 这两个底图变量必须定义在函数内部，否则不显示地图
-    // const baseMapLayer = L.supermap.tiandituTileLayer({
-    //   url: url,
-    //   key: '70c2475638a45e3fea8696df2f9917f8',
-    // })
-
-    // // 地图标签
-    // const MapLabel = L.supermap.tiandituTileLayer({
-    //   isLabel: true,
-    //   key: '70c2475638a45e3fea8696df2f9917f8',
-    // })
-
-    // // console.log(map)
-    // map.addLayer(baseMapLayer)
-    // map.addLayer(MapLabel)
-    // let baseMap = {
-    //   中国底图: baseMapLayer,
-    //   // '矢量标记': MapLabel
-    // }
-    // let control = L.control.layers(baseMap).addTo(map)
-    let control = L.control
-      .scale({
-        imperial: false,
-        maxWidth: 200,
-      })
-      .addTo(map)
-    resolve(control)
-  }).catch(err => console.log(err))
-}
-
-/**
- *
- * @param {*} drawLayer 绘制的图层
- * @returns 绘制范围内搜索到的结果图层
- */
-async function getSearchLayer(drawLayer) {
-  // 根据绘制图形进行范围查询
-  let features
-  switch (drawLayer.type) {
-    case "rectangle":
-      features = await searchByBounds(drawLayer.layer._bounds)
-      break
-    case "polygon":
-      features = await searchByGeometry(L.polygon(drawLayer.layer._latlngs))
-      break
-    default:
-      break
-  }
-
-  if (features == undefined) return
-  return await new Promise(resolve => {
-    let resultLayer = L.geoJSON(features, {
-      onEachFeature: function (feature, layer) {
-        // console.log(feature.properties);
-        layer.bindPopup(feature.properties.NAME)
-      },
-    })
-    // console.log(resultLayer);
-    // resultLayer.addTo(map)
-    resolve(resultLayer)
-  })
-}
-
 // 范围查询、根据绘制的矩形查询矩形内的图层 从数据服务中查询
 async function searchByBounds(bounds) {
   // 范围查询参数
@@ -111,9 +46,11 @@ async function searchByBounds(bounds) {
   })
 
   return await new Promise(resolve => {
-    L.supermap.featureService(dataUrl).getFeaturesByBounds(boundsParam, function (serviceResult) {
-      resolve(serviceResult.result.features)
-    })
+    L.supermap
+      .featureService(BASE_CONFIG.BASEURL.dataUrl)
+      .getFeaturesByBounds(boundsParam, function (serviceResult) {
+        resolve(serviceResult.result.features)
+      })
   })
   // return await Promise.all([boundsParam, resultLayer])
 }
@@ -131,7 +68,7 @@ async function searchByGeometry(polygon) {
 
   return await new Promise(resolve => {
     L.supermap
-      .featureService(dataUrl)
+      .featureService(BASE_CONFIG.BASEURL.dataUrl)
       .getFeaturesByGeometry(geometryParam, function (serviceResult) {
         resolve(serviceResult.result.features)
       })
@@ -155,9 +92,12 @@ async function searchBySql(shop = "店", ...args) {
   })
 
   return await new Promise(resolve =>
-    new L.supermap.FeatureService(dataUrl).getFeaturesBySQL(sqlParam, function (serviceResult) {
-      resolve(serviceResult.result.features)
-    })
+    new L.supermap.FeatureService(BASE_CONFIG.BASEURL.dataUrl).getFeaturesBySQL(
+      sqlParam,
+      function (serviceResult) {
+        resolve(serviceResult.result.features)
+      }
+    )
   )
 }
 
@@ -183,16 +123,18 @@ function searchButton() {
 }
 
 // 几何对象缓冲区分析
-function bufferAnalyst(geometry) {
+async function bufferAnalyst(geometry) {
   // 空间分析服务
-  let bufferAnalystService = new L.supermap.SpatialAnalystService(spatialAnalysisUrl)
+  let bufferAnalystService = new L.supermap.SpatialAnalystService(
+    BASE_CONFIG.BASEURL.spatialAnalystUrl
+  )
   // 缓冲区分析参数
   let bufferSettings = new L.supermap.BufferSetting({
     endType: L.supermap.BufferEndType.ROUND,
-    // leftDistance: new L.supermap.BufferDistance({ value: 250 }),
-    // rightDistance: new L.supermap.BufferDistance({ value: 250 }),
-    radiusUnit: L.supermap.BufferRadiusUnit.METER,
-    semicircleLineSegment: 3,
+    leftDistance: new L.supermap.BufferDistance({ value: 3 }),
+    rightDistance: new L.supermap.BufferDistance({ value: 3 }),
+    radiusUnit: L.supermap.BufferRadiusUnit.KILOMETER,
+    semicircleLineSegment: 100,
   })
   // 几何对象缓冲区参数
   let geoBufferAnalystParams = new L.supermap.GeometryBufferAnalystParameters({
@@ -200,7 +142,9 @@ function bufferAnalyst(geometry) {
     sourceGeometrySRID: 4326,
     bufferSetting: bufferSettings,
   })
-  return new Promise(resolve => {
+
+  // 获取缓冲区geojson数据
+  return await new Promise(resolve => {
     bufferAnalystService.bufferAnalysis(geoBufferAnalystParams, serviceResult => {
       console.log(serviceResult)
       resolve(serviceResult.result.resultGeometry)
@@ -208,13 +152,98 @@ function bufferAnalyst(geometry) {
   })
 }
 
+function transportationAnalystParameter() {
+  // 交通网络分析结果返回内容
+  let resultSetting = new L.supermap.TransportationAnalystResultSetting({
+    returnEdgeFeatures: true,
+    returnEdgeGeometry: true,
+    returnEdgeIDs: true,
+    returnNodeFeatures: true,
+    returnNodeGeometry: true,
+    returnNodeIDs: true,
+    returnPathGuides: true,
+    returnRoutes: true,
+  })
+
+  // 交通网络分析参数
+  let AnalystParameter = new L.supermap.TransportationAnalystParameter({
+    resultSetting: resultSetting,
+    weightFieldName: "SmLength",
+  })
+  return AnalystParameter
+}
+
+// 服务区分析
+async function serviceAreaAnalyst(latlng) {
+  let parameter = transportationAnalystParameter()
+  // 服务区分析参数
+  let serviceAreaAnalystParameters = new L.supermap.FindServiceAreasParameters({
+    weights: [3000],
+    centers: latlng,
+    isAnalyzeById: false,
+    parameter: parameter,
+  })
+  console.log(latlng)
+  // 网络分析服务类
+  let networkAnalystService = new L.supermap.NetworkAnalystService(
+    BASE_CONFIG.BASEURL.newworkServiceUrl
+  )
+
+  return await new Promise(resolve => {
+    // 服务区分析
+    networkAnalystService.findServiceAreas(serviceAreaAnalystParameters, serviceResult => {
+      // console.log(serviceResult.result.serviceAreaList)
+      // let serviceAreaLists = serviceResult.result.serviceAreaList.map(serviceArea => {
+      //   return serviceArea.serviceRegion
+      // })
+      // resolve(serviceAreaLists)
+      resolve(serviceResult.result.serviceAreaList)
+    })
+  })
+}
+
+async function closestFacilitiesAnalyst(eventPoint, facilityPonit) {
+  let parameter = transportationAnalystParameter()
+  // 最近设施服务参数
+  let closestFacilitiesAnalystParameters = new L.supermap.FindClosestFacilitiesParameters({
+    //事件点,必设参数
+    event: eventPoint,
+    //要查找的设施点数量。默认值为1
+    expectFacilityCount: 10,
+    //设施点集合,必设
+    facilities: facilityPonit,
+    isAnalyzeById: false,
+    parameter: parameter,
+  })
+
+  // 网络分析服务类
+  let networkAnalystService = new L.supermap.NetworkAnalystService(
+    BASE_CONFIG.BASEURL.newworkServiceUrl
+  )
+
+  return await new Promise(resolve => {
+    // 最近设施分析
+    networkAnalystService.findClosestFacilities(
+      closestFacilitiesAnalystParameters,
+      serviceResult => {
+        console.log(serviceResult)
+        // let serviceAreaLists = serviceResult.result.serviceAreaList.map(serviceArea => {
+        //   return serviceArea.serviceRegion
+        // })
+        // resolve(serviceAreaLists)
+        resolve(serviceResult.result.facilityPathList)
+      }
+    )
+  })
+}
+
 export default mapObject
 export {
-  mapControl,
-  getSearchLayer,
   searchByBounds,
   searchByGeometry,
   searchBySql,
   getFieldsName,
   bufferAnalyst,
+  serviceAreaAnalyst,
+  closestFacilitiesAnalyst,
 }

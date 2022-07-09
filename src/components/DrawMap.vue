@@ -10,7 +10,7 @@
   // import * as L from 'leaflet'
   import "leaflet-draw"
   import "@/utils/L.draw-local"
-  import { getSearchLayer, bufferAnalyst } from "@/utils/map.js"
+  import { bufferAnalyst } from "@/utils/map.js"
   import { onUnmounted, reactive } from "vue"
   const props = defineProps({
     map: { type: Object, default: () => null },
