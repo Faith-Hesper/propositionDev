@@ -2,14 +2,15 @@
  * @Author: Faith
  * @Date: 2022-07-10 18:34
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-10 18:57
+ * @LastEditTime: 2022-07-10 21:15
  * @Description:
  */
-// 拖拽的指令
-const drag = {
-  beforeMount(el, binding) {
+
+function dragEvent(el, binding) {
+  {
     // 自定义属性，判断是否可拖拽
-    if (!binding.value) return
+    if (!binding.value || !binding.arg) return
+    // console.log(binding.arg)
     const dialogHeaderEl = el.querySelector(".dialog_header")
     const dragDom = el.querySelector(".dialog_content")
     dialogHeaderEl.style.cssText += ";cursor:move;"
@@ -83,6 +84,16 @@ const drag = {
       }
       return false
     }
+  }
+}
+
+// 拖拽的指令
+const drag = {
+  beforeMount(el, binding) {
+    return dragEvent(el, binding)
+  },
+  updated(el, binding) {
+    return dragEvent(el, binding)
   },
 }
 // 挂载，注册

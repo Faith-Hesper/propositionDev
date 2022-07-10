@@ -245,7 +245,7 @@
     <div class="toolbar">
       <Search @shopDetail="getShops"></Search>
     </div>
-    <div v-dialogDrag="true" class="querybar">
+    <div class="querybar">
       <CardContainer>
         <template v-slot:content>
           <StoreQuery
