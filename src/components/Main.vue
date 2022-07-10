@@ -5,6 +5,7 @@
   import DrawMap from "@/components/DrawMap"
   import DrawMapBtn from "@/components/DrawMapBtn"
   import StoreQuery from "@/components/StoreQuery"
+  import CardContainer from "@/components/CardContainer"
   import {
     searchByBounds,
     searchByGeometry,
@@ -50,6 +51,7 @@
     editableLayers: null,
     listLoading: false,
     shopData: [],
+    StoreQueryStatus: false,
   })
 
   MyCustomMap.editableLayers = L.featureGroup()
@@ -243,12 +245,16 @@
     <div class="toolbar">
       <Search @shopDetail="getShops"></Search>
     </div>
-    <div class="querybar">
-      <StoreQuery
-        :map="MyCustomMap.map"
-        @shopData="showShopList"
-        @listLoading="() => MyCustomMap.listLoading"
-      ></StoreQuery>
+    <div v-dialogDrag="true" class="querybar">
+      <CardContainer>
+        <template v-slot:content>
+          <StoreQuery
+            :map="MyCustomMap.map"
+            @shopData="showShopList"
+            @listLoading="() => MyCustomMap.listLoading"
+          ></StoreQuery>
+        </template>
+      </CardContainer>
     </div>
     <div v-loading="MyCustomMap.listLoading" class="store-list">
       <el-card class="box-card" :body-style="{ padding: 0 }">
@@ -309,7 +315,7 @@
     position: absolute;
     left: 0;
     margin: 30px 0 0 10px;
-    z-index: 5;
+    z-index: 6;
   }
   .store-list {
     position: absolute;

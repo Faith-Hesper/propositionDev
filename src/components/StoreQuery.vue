@@ -1,6 +1,6 @@
 <template>
   <div class="store">
-    <el-card class="box-card" :body-style="{ padding: 0 }">
+    <div class="box-card" :body-style="{ padding: 0 }">
       <div class="box-header">
         <span>门店查询</span>
       </div>
@@ -15,7 +15,7 @@
           ></Draw>
         </div>
       </div>
-    </el-card>
+    </div>
   </div>
 </template>
 
