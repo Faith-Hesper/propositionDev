@@ -2,15 +2,25 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-09 18:09
+ * @LastEditTime: 2022-07-10 16:22
  * @Description:
  */
 
 import { SuperMap, tiandituTileLayer } from "@supermap/iclient-leaflet"
+import market from "@/assets/images/bag-heart-fill.svg"
 // import "leaflet-draw"
 // import "@/utils/L.draw-local"
 // leaflet-draw 1.0.4 绘制rectangle bug
 window.type = true
+
+let greenIcon = L.icon({
+  iconUrl: market,
+  iconSize: [30, 41], // size of the icon
+  shadowSize: [41, 41], // size of the shadow
+  iconAnchor: [12, 30], // point of the icon which will correspond to marker's location
+  shadowAnchor: [4, 62], // the same for the shadow
+  popupAnchor: [1, -34], // point from which the popup should open relative to the iconAnchor
+})
 
 // 初始化地图对象
 async function mapObject(id) {
@@ -40,7 +50,13 @@ async function searchByBounds(bounds) {
     L.supermap
       .featureService(BASE_CONFIG.BASEURL.dataUrl)
       .getFeaturesByBounds(boundsParam, function (serviceResult) {
-        resolve(serviceResult.result.features)
+        serviceResult.type === "processCompleted"
+          ? resolve(serviceResult.result.features)
+          : ElMessage({
+              showClose: true,
+              message: `${serviceResult.result}`,
+              type: "error",
+            })
       })
   })
   // return await Promise.all([boundsParam, resultLayer])
@@ -172,9 +188,13 @@ function transportationAnalystParameter() {
 // 服务区分析
 async function serviceAreaAnalyst(latlng) {
   let parameter = transportationAnalystParameter()
+  let weights = []
+  latlng.map(() => {
+    weights.push(3000)
+  })
   // 服务区分析参数
   let serviceAreaAnalystParameters = new L.supermap.FindServiceAreasParameters({
-    weights: [3000],
+    weights: weights,
     centers: latlng,
     isAnalyzeById: false,
     parameter: parameter,
@@ -235,6 +255,7 @@ async function closestFacilitiesAnalyst(eventPoint, facilityPonit) {
 
 export default mapObject
 export {
+  greenIcon,
   searchByBounds,
   searchByGeometry,
   searchBySql,

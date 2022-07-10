@@ -129,17 +129,19 @@
   }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
   .draw-btn {
     display: flex;
-    flex-direction: column;
-    margin: 40px 10px 10px 0;
+    width: 100%;
+    height: 100%;
+    justify-content: space-around;
+    align-content: space-around;
+    flex-wrap: wrap;
     right: 0;
     z-index: 5;
-  }
-  .el-button {
-    width: 48px;
-    margin: 2px 0;
-    border-radius: 5px;
+    .el-button {
+      margin: 0;
+      border-radius: 5px;
+    }
   }
 </style>

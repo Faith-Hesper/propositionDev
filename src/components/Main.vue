@@ -4,6 +4,7 @@
   import Draw from "@/components/Draw"
   import DrawMap from "@/components/DrawMap"
   import DrawMapBtn from "@/components/DrawMapBtn"
+  import StoreQuery from "@/components/StoreQuery"
   import {
     searchByBounds,
     searchByGeometry,
@@ -15,6 +16,16 @@
 
   const fullscreenLoading = ref(false)
   const url = "http://localhost:8090/iserver/services/map-ChengduFresh/rest/maps/ChengduMap"
+  import supermarket from "@/assets/images/supermarket.png"
+  import market from "@/assets/images/bag-heart-fill.svg"
+  let greenIcon = L.icon({
+    iconUrl: market,
+    iconSize: [30, 41], // size of the icon
+    shadowSize: [41, 41], // size of the shadow
+    iconAnchor: [12, 30], // point of the icon which will correspond to marker's location
+    shadowAnchor: [4, 62], // the same for the shadow
+    popupAnchor: [1, -34], // point from which the popup should open relative to the iconAnchor
+  })
   const drawBtns = [
     {
       id: 0,
@@ -37,6 +48,8 @@
     map: null,
     control: null,
     editableLayers: null,
+    listLoading: false,
+    shopData: [],
   })
 
   MyCustomMap.editableLayers = L.featureGroup()
@@ -44,7 +57,7 @@
   // 添加图层切换控件
   const mapInit = mapObject => {
     MyCustomMap.map = mapObject.map
-
+    L.marker([30.667439, 104.079654], { icon: greenIcon }).addTo(MyCustomMap.map)
     let overlayer = L.supermap
       .tiledMapLayer(BASE_CONFIG.BASEURL.mapUrl, {
         cacheEnabled: true,
@@ -69,7 +82,7 @@
   const getShops = features => {
     fullscreenLoading.value = true
     MyCustomMap.editableLayers.clearLayers()
-
+    formatShopData(features)
     let layers = geoJsonBind(features)
 
     MyCustomMap.map.flyTo(L.latLng(features.features[0].geometry.coordinates.reverse()), 12)
@@ -112,7 +125,6 @@
   const markerLayer = async resultLayer => {
     fullscreenLoading.value = true
     MyCustomMap.editableLayers.clearLayers()
-
     // 3公里范围缓冲区
     let bufferLayer = await bufferAnalyst(resultLayer)
     let buffer = L.geoJSON(bufferLayer)
@@ -124,12 +136,12 @@
     // 商店坐标
     let serviceAreaLatlng = getServiceArea(geometryLayer)
 
-    // console.log(geometryLayer)
+    console.log(serviceAreaLatlng)
     let featureGroup = L.featureGroup([buffer, markerLayer])
     // console.log(resultLayer)
 
     // 服务区分析
-    let serviceAreaList = await serviceAreaAnalyst([resultLayer._latlng])
+    let serviceAreaList = await serviceAreaAnalyst(serviceAreaLatlng)
     let serviceRegion = serviceAreaList.map(serviceArea => {
       return serviceArea.serviceRegion
     })
@@ -143,8 +155,8 @@
     // console.log(facilities)
     MyCustomMap.editableLayers.addLayer(facilitiesLayer).addTo(MyCustomMap.map)
     // MyCustomMap.editableLayers.addLayer(L.featureGroup(facilitiesRoute)).addTo(MyCustomMap.map)
-    // MyCustomMap.editableLayers.addLayer(L.geoJSON(serviceRegion)).addTo(MyCustomMap.map)
-    // MyCustomMap.editableLayers.addLayer(L.geoJSON(routes)).addTo(MyCustomMap.map)
+    MyCustomMap.editableLayers.addLayer(L.geoJSON(serviceRegion)).addTo(MyCustomMap.map)
+    MyCustomMap.editableLayers.addLayer(L.geoJSON(routes)).addTo(MyCustomMap.map)
     // MyCustomMap.editableLayers.addLayer(featureGroup).addTo(MyCustomMap.map)
     fullscreenLoading.value = false
   }
@@ -152,7 +164,7 @@
   const geoJsonBind = features => {
     return L.geoJSON(features, {
       pointToLayer: function (feature, latlng) {
-        return L.marker(latlng).bindPopup(`
+        return L.marker(latlng, { icon: greenIcon }).bindPopup(`
   <div class="shop">
   <p>店名：${feature.properties.NAME}</p>
   <p>品类：${feature.properties.CATEGORY}</p>
@@ -202,6 +214,20 @@
     return L.featureGroup([...facilities, ...facilitiesRoute])
   }
 
+  const showShopList = data => {
+    MyCustomMap.shopData = data
+    MyCustomMap.listLoading = false
+  }
+
+  const formatShopData = async features => {
+    console.log(features)
+    MyCustomMap.shopData = await Promise.resolve(
+      features.features.map(feature => {
+        return { ...feature.properties }
+      })
+    )
+  }
+
   onMounted(() => {
     // map = await mapObject('map')
     // let control = mapControl(map)
@@ -216,6 +242,21 @@
   <div class="main">
     <div class="toolbar">
       <Search @shopDetail="getShops"></Search>
+    </div>
+    <div class="querybar">
+      <StoreQuery
+        :map="MyCustomMap.map"
+        @shopData="showShopList"
+        @listLoading="() => MyCustomMap.listLoading"
+      ></StoreQuery>
+    </div>
+    <div v-loading="MyCustomMap.listLoading" class="store-list">
+      <el-card class="box-card" :body-style="{ padding: 0 }">
+        <div class="list-header">
+          <span>查询结果</span>
+        </div>
+        <ShopForm :shopList="MyCustomMap.shopData"></ShopForm>
+      </el-card>
     </div>
     <div class="drawBar">
       <Draw
@@ -237,7 +278,7 @@
   </div>
 </template>
 
-<style scoped>
+<style lang="less" scoped>
   .main {
     width: 100%;
     height: 700px;
@@ -254,9 +295,36 @@
     z-index: 5;
   }
   .drawBar {
+    width: 50px;
+    height: 100px;
     position: absolute;
     right: 0;
-    margin: 30px 0 10px 0;
+    margin: 30px 10px 10px 0;
     z-index: 5;
+    .el-button {
+      width: 50px;
+    }
+  }
+  .querybar {
+    position: absolute;
+    left: 0;
+    margin: 30px 0 0 10px;
+    z-index: 5;
+  }
+  .store-list {
+    position: absolute;
+    z-index: 5;
+    width: 400px;
+    margin: 0 10px;
+    top: 200px;
+    .list-header {
+      height: 25px;
+      background: #428bca;
+      span {
+        font-style: 14px;
+        line-height: 25px;
+        color: white;
+      }
+    }
   }
 </style>
