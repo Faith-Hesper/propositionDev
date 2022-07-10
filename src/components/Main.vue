@@ -257,12 +257,14 @@
       </CardContainer>
     </div>
     <div v-loading="MyCustomMap.listLoading" class="store-list">
-      <el-card class="box-card" :body-style="{ padding: 0 }">
-        <div class="list-header">
-          <span>查询结果</span>
-        </div>
-        <ShopForm :shopList="MyCustomMap.shopData"></ShopForm>
-      </el-card>
+      <CardContainer>
+        <template v-slot:content>
+          <div class="list-header">
+            <span>查询结果</span>
+          </div>
+          <ShopForm :shopList="MyCustomMap.shopData"></ShopForm>
+        </template>
+      </CardContainer>
     </div>
     <div class="drawBar">
       <Draw
@@ -315,11 +317,9 @@
     position: absolute;
     left: 0;
     margin: 30px 0 0 10px;
-    z-index: 6;
   }
   .store-list {
     position: absolute;
-    z-index: 5;
     width: 400px;
     margin: 0 10px;
     top: 200px;

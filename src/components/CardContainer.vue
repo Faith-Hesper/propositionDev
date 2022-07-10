@@ -34,5 +34,6 @@
   }
   .dialog_content {
     position: fixed;
+    z-index: 5;
   }
 </style>

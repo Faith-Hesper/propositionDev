@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-10 18:34
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-10 21:15
+ * @LastEditTime: 2022-07-10 21:32
  * @Description:
  */
 
@@ -15,6 +15,8 @@ function dragEvent(el, binding) {
     const dragDom = el.querySelector(".dialog_content")
     dialogHeaderEl.style.cssText += ";cursor:move;"
     // dragDom.style.cssText += ';bottom:0px;'
+
+    const zIndex = dragDom.style.zIndex
 
     // 获取原有属性 ie dom元素.currentStyle 火狐谷歌 window.getComputedStyle(dom元素, null);
     const sty = (function () {
@@ -40,6 +42,8 @@ function dragEvent(el, binding) {
 
       const minDragDomTop = dragDom.offsetTop
       const maxDragDomTop = screenHeight - dragDom.offsetTop - dragDomheight
+
+      dragDom.style.zIndex = 100
 
       // 获取到的值带px 正则匹配替换
       let styL = sty(dragDom, "left")
@@ -81,6 +85,7 @@ function dragEvent(el, binding) {
       document.onmouseup = function (e) {
         document.onmousemove = null
         document.onmouseup = null
+        dragDom.style.zIndex = zIndex
       }
       return false
     }
