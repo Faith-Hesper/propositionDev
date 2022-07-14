@@ -6,6 +6,7 @@
   import DrawMapBtn from "@/components/DrawMapBtn"
   import StoreQuery from "@/components/StoreQuery"
   import CardContainer from "@/components/CardContainer"
+  import GoodsDilivery from "@/components/GoodsDilivery"
   import {
     searchByBounds,
     searchByGeometry,
@@ -246,7 +247,7 @@
       <Search @shopDetail="getShops"></Search>
     </div>
     <div class="querybar">
-      <CardContainer>
+      <CardContainer title="门店查询">
         <template v-slot:content>
           <StoreQuery
             :map="MyCustomMap.map"
@@ -257,12 +258,16 @@
       </CardContainer>
     </div>
     <div v-loading="MyCustomMap.listLoading" class="store-list">
-      <CardContainer>
+      <CardContainer title="查询结果">
         <template v-slot:content>
-          <div class="list-header">
-            <span>查询结果</span>
-          </div>
           <ShopForm :shopList="MyCustomMap.shopData"></ShopForm>
+        </template>
+      </CardContainer>
+    </div>
+    <div class="diliverybar">
+      <CardContainer title="物流配送">
+        <template v-slot:content>
+          <GoodsDilivery :map="MyCustomMap.map"></GoodsDilivery>
         </template>
       </CardContainer>
     </div>
@@ -332,5 +337,12 @@
         color: white;
       }
     }
+  }
+  .diliverybar {
+    position: absolute;
+    margin: 0 10px;
+    right: 300px;
+    top: 200px;
+    z-index: 5;
   }
 </style>

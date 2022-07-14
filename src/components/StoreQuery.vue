@@ -1,9 +1,9 @@
 <template>
   <div class="store">
-    <div class="box-card" :body-style="{ padding: 0 }">
-      <div class="box-header">
+    <div class="box-card">
+      <!-- <div class="box-header">
         <span>门店查询</span>
-      </div>
+      </div> -->
       <div class="box-body">
         <div class="querybtn">
           <Draw
@@ -51,6 +51,14 @@
     },
   ]
   MyCustomMap.editableLayers = L.featureGroup()
+
+  MyCustomMap.editableLayers
+    .on("mouseover", e => {
+      e.layer.openPopup()
+    })
+    .on("mouseout", e => e.layer.closePopup())
+    .on("click", e => {})
+
   // 框选查询
   const rectangleLayer = async resultLayer => {
     MyCustomMap.editableLayers.clearLayers()

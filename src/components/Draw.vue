@@ -60,12 +60,13 @@
     props.map.on("draw:drawstop", () => {
       if (index) {
         // 取消前面 绘制、dbclick事件监听
-        props.map.off("draw:drawstart", drawCallBack)
+        props.map.off("draw:created", drawCallBack)
         props.map.off("dblclick", complete)
         // props.map.off("draw:drawstop")
         draw.drawControl.disable()
         emitLayer(draw.type, draw.editableLayers)
         index = 0
+        props.map.off("draw:drawstop")
       }
     })
   }

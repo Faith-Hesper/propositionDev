@@ -2,12 +2,14 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-10 16:22
+ * @LastEditTime: 2022-07-14 21:51
  * @Description:
  */
 
 import { SuperMap, tiandituTileLayer } from "@supermap/iclient-leaflet"
 import market from "@/assets/images/bag-heart-fill.svg"
+import icon1 from "@/assets/images/icon1.png"
+import icon2 from "@/assets/images/icon2.png"
 // import "leaflet-draw"
 // import "@/utils/L.draw-local"
 // leaflet-draw 1.0.4 绘制rectangle bug
@@ -15,6 +17,22 @@ window.type = true
 
 let greenIcon = L.icon({
   iconUrl: market,
+  iconSize: [30, 41], // size of the icon
+  shadowSize: [41, 41], // size of the shadow
+  iconAnchor: [12, 30], // point of the icon which will correspond to marker's location
+  shadowAnchor: [4, 62], // the same for the shadow
+  popupAnchor: [1, -34], // point from which the popup should open relative to the iconAnchor
+})
+let eventIcon = L.icon({
+  iconUrl: icon1,
+  iconSize: [30, 41], // size of the icon
+  shadowSize: [41, 41], // size of the shadow
+  iconAnchor: [12, 30], // point of the icon which will correspond to marker's location
+  shadowAnchor: [4, 62], // the same for the shadow
+  popupAnchor: [1, -34], // point from which the popup should open relative to the iconAnchor
+})
+let aimIcon = L.icon({
+  iconUrl: icon2,
   iconSize: [30, 41], // size of the icon
   shadowSize: [41, 41], // size of the shadow
   iconAnchor: [12, 30], // point of the icon which will correspond to marker's location
@@ -38,7 +56,7 @@ async function mapObject(id) {
 // 范围查询、根据绘制的矩形查询矩形内的图层 从数据服务中查询
 async function searchByBounds(bounds) {
   // 范围查询参数
-  const boundsParam = await new Promise(resolve => {
+  const boundsParam = await new Promise((resolve, reject) => {
     const params = new L.supermap.GetFeaturesByBoundsParameters({
       datasetNames: ["ChengduFresh:Shop"],
       bounds: bounds,
@@ -46,17 +64,20 @@ async function searchByBounds(bounds) {
     resolve(params)
   })
 
-  return await new Promise(resolve => {
+  return await new Promise((resolve, reject) => {
     L.supermap
       .featureService(BASE_CONFIG.BASEURL.dataUrl)
       .getFeaturesByBounds(boundsParam, function (serviceResult) {
-        serviceResult.type === "processCompleted"
-          ? resolve(serviceResult.result.features)
-          : ElMessage({
-              showClose: true,
-              message: `${serviceResult.result}`,
-              type: "error",
-            })
+        if (serviceResult.type === "processFailed") {
+          ElMessage({
+            showClose: true,
+            message: `${serviceResult.error.errorMsg}`,
+            type: "error",
+          })
+          reject(serviceResult.error)
+        } else {
+          resolve(serviceResult.result.features)
+        }
       })
   })
   // return await Promise.all([boundsParam, resultLayer])
@@ -65,7 +86,7 @@ async function searchByBounds(bounds) {
 // 几何查询、根据绘制的几何对象查询几何对象对的图层 从数据服务中查询
 async function searchByGeometry(polygon) {
   // 几何查询参数
-  const geometryParam = await new Promise(resolve => {
+  const geometryParam = await new Promise((resolve, reject) => {
     const params = new L.supermap.GetFeaturesByGeometryParameters({
       datasetNames: ["ChengduFresh:Shop"],
       geometry: polygon,
@@ -73,11 +94,20 @@ async function searchByGeometry(polygon) {
     resolve(params)
   })
 
-  return await new Promise(resolve => {
+  return await new Promise((resolve, reject) => {
     L.supermap
       .featureService(BASE_CONFIG.BASEURL.dataUrl)
       .getFeaturesByGeometry(geometryParam, function (serviceResult) {
-        resolve(serviceResult.result.features)
+        if (serviceResult.type === "processFailed") {
+          ElMessage({
+            showClose: true,
+            message: `${serviceResult.error.errorMsg}`,
+            type: "error",
+          })
+          reject(serviceResult.error)
+        } else {
+          resolve(serviceResult.result.features)
+        }
       })
   })
 }
@@ -95,19 +125,28 @@ async function searchBySql(shop = "店", ...args) {
     toIndex: 19,
   }
   Object.assign(sqlParameters, ...args)
-  const sqlParam = await new Promise(resolve => {
+  const sqlParam = await new Promise((resolve, reject) => {
     const params = new L.supermap.GetFeaturesBySQLParameters(sqlParameters)
     resolve(params)
   })
 
-  return await new Promise(resolve =>
+  return await new Promise((resolve, reject) =>
     new L.supermap.FeatureService(BASE_CONFIG.BASEURL.dataUrl).getFeaturesBySQL(
       sqlParam,
       serviceResult => {
-        resolve({
-          totalCount: serviceResult.result.totalCount,
-          features: serviceResult.result.features,
-        })
+        if (serviceResult.type === "processFailed") {
+          ElMessage({
+            showClose: true,
+            message: `${serviceResult.error}`,
+            type: "error",
+          })
+          reject(serviceResult.error)
+        } else {
+          resolve({
+            totalCount: serviceResult.result.totalCount,
+            features: serviceResult.result.features,
+          })
+        }
       }
     )
   )
@@ -156,14 +195,24 @@ async function bufferAnalyst(geometry) {
   })
 
   // 获取缓冲区geojson数据
-  return await new Promise(resolve => {
+  return await new Promise((resolve, reject) => {
     bufferAnalystService.bufferAnalysis(geoBufferAnalystParams, serviceResult => {
-      console.log(serviceResult)
-      resolve(serviceResult.result.resultGeometry)
+      // console.log(serviceResult)
+      if (serviceResult.type === "processFailed") {
+        ElMessage({
+          showClose: true,
+          message: `${serviceResult.error.errorMsg}`,
+          type: "error",
+        })
+        reject(serviceResult.error)
+      } else {
+        resolve(serviceResult.result.resultGeometry)
+      }
     })
   })
 }
 
+// 交通网络分析参数
 function transportationAnalystParameter() {
   // 交通网络分析结果返回内容
   let resultSetting = new L.supermap.TransportationAnalystResultSetting({
@@ -199,13 +248,13 @@ async function serviceAreaAnalyst(latlng) {
     isAnalyzeById: false,
     parameter: parameter,
   })
-  console.log(latlng)
+  // console.log(latlng)
   // 网络分析服务类
   let networkAnalystService = new L.supermap.NetworkAnalystService(
     BASE_CONFIG.BASEURL.newworkServiceUrl
   )
 
-  return await new Promise(resolve => {
+  return await new Promise((resolve, reject) => {
     // 服务区分析
     networkAnalystService.findServiceAreas(serviceAreaAnalystParameters, serviceResult => {
       // console.log(serviceResult.result.serviceAreaList)
@@ -213,12 +262,22 @@ async function serviceAreaAnalyst(latlng) {
       //   return serviceArea.serviceRegion
       // })
       // resolve(serviceAreaLists)
-      resolve(serviceResult.result.serviceAreaList)
+      if (serviceResult.type === "processFailed") {
+        ElMessage({
+          showClose: true,
+          message: `${serviceResult.error.errorMsg}`,
+          type: "error",
+        })
+        reject(serviceResult.error)
+      } else {
+        resolve(serviceResult.result.serviceAreaList)
+      }
     })
   })
 }
 
-async function closestFacilitiesAnalyst(eventPoint, facilityPonit) {
+// 最近设施服务分析
+async function closestFacilitiesAnalyst({ eventPoint, facilityPonit }) {
   let parameter = transportationAnalystParameter()
   // 最近设施服务参数
   let closestFacilitiesAnalystParameters = new L.supermap.FindClosestFacilitiesParameters({
@@ -237,7 +296,7 @@ async function closestFacilitiesAnalyst(eventPoint, facilityPonit) {
     BASE_CONFIG.BASEURL.newworkServiceUrl
   )
 
-  return await new Promise(resolve => {
+  return await new Promise((resolve, reject) => {
     // 最近设施分析
     networkAnalystService.findClosestFacilities(
       closestFacilitiesAnalystParameters,
@@ -247,7 +306,16 @@ async function closestFacilitiesAnalyst(eventPoint, facilityPonit) {
         //   return serviceArea.serviceRegion
         // })
         // resolve(serviceAreaLists)
-        resolve(serviceResult.result.facilityPathList)
+        if (serviceResult.type === "processFailed") {
+          ElMessage({
+            showClose: true,
+            message: `${serviceResult.error}`,
+            type: "error",
+          })
+          reject(serviceResult.error.errorMsg)
+        } else {
+          resolve(serviceResult.result.facilityPathList)
+        }
       }
     )
   })
@@ -256,6 +324,8 @@ async function closestFacilitiesAnalyst(eventPoint, facilityPonit) {
 export default mapObject
 export {
   greenIcon,
+  eventIcon,
+  aimIcon,
   searchByBounds,
   searchByGeometry,
   searchBySql,
