@@ -123,9 +123,11 @@
     let bufferLayerBind = L.geoJSON(bufferLayer).bindPopup("三公里").openPopup()
     MyCustomMap.editableLayers.addLayer(bufferLayerBind)
 
-    let a = await getBufferShop()
-    console.log(a)
+    // 范围内门店图层和坐标数组
+    let [geometryLayer, serviceAreaLatlng] = await getBufferShop(bufferLayer)
+    console.log(geometryLayer, serviceAreaLatlng)
 
+    await diliveryRouteAnalyst(serviceAreaLatlng)
     // 最近设施分析
     // let facilityPathList = await closestFacilitiesAnalyst({
     //   eventPoint: MyCustomMap.aimMarkerLayer._latlng,
@@ -141,14 +143,9 @@
     form = null
   }
 
-  const getBufferShop = async () => {
+  // 获取缓冲区内的门店
+  const getBufferShop = async bufferLayer => {
     try {
-      let bufferLayer = await bufferAnalyst({
-        geometry: MyCustomMap.aimMarkerLayer,
-        distance: form.range,
-      })
-      let bufferLayerBind = L.geoJSON(bufferLayer).bindPopup("三公里").openPopup()
-
       // 缓冲区内的商店
       let geometryLayer = await searchByGeometry(bufferLayer)
       if (geometryLayer.features.length === 0) {
@@ -160,40 +157,43 @@
       // console.log(geometryLayer)
       // 商店坐标
       let serviceAreaLatlng = await getServiceArea(geometryLayer)
+      if (serviceAreaLatlng) {
+        ElMessage({
+          showClose: true,
+          message: `已查询到${serviceAreaLatlng.length}个商店`,
+          type: "success",
+        })
+      }
 
-      return await Promise.all([bufferLayer, geometryLayer, serviceAreaLatlng])
+      return await Promise.all([geometryLayer, serviceAreaLatlng])
     } catch (error) {
       ElMessage({
         showClose: true,
         message: `${error}`,
-        type: "error",
+        type: "warning",
       })
-      return "cw"
+      return error
       // console.log(error)
     }
   }
 
-  // const getFitNameShop = (geometryLayer)=>{
-  //   if(form.name){
-  //     return geometryLayer.
-  //   }
-  // }
-
   // 获取服务站点坐标 array 数据
   const getServiceArea = async serviceArea => {
     return await new Promise((resolve, reject) => {
-      let resultArray = serviceArea.features.filter(feature => {
+      let resultArray = []
+      serviceArea.features.forEach(feature => {
         // console.log(feature)
         // 筛选符合搜索名称的商店
         if (form.name) {
           if (feature.properties.NAME.indexOf(form.name) != -1) {
-            return L.latLng(feature.geometry.coordinates.reverse())
+            resultArray.push(L.latLng(feature.geometry.coordinates.reverse()))
           }
         } else {
-          return L.latLng(feature.geometry.coordinates.reverse())
+          resultArray.push(L.latLng(feature.geometry.coordinates.reverse()))
         }
       })
 
+      // console.log(resultArray)
       if (resultArray.length === 0) {
         reject("未查询到该商店,请重新输入商店名称")
       }
@@ -201,51 +201,72 @@
     })
   }
 
+  const diliveryRouteAnalyst = async serviceAreaLatlng => {
+    // 最近设施分析
+    let facilityPathList = await closestFacilitiesAnalyst({
+      eventPoint: MyCustomMap.aimMarkerLayer._latlng,
+      facilityPonit: serviceAreaLatlng,
+      facilityNum: form.shopNum,
+    })
+    console.log(serviceAreaLatlng)
+    let facilitiesLayer = await getDeliveryRoute(facilityPathList)
+  }
+
   // 获取配送路线
-  const getDeliveryRoute = facilityPathList => {
-    // 最近设施点
-    let facilities = facilityPathList.map(facilityPath => {
-      // console.log(facilityPath)
-      let facility = facilityPath.facility
-      let facilityMarkers = L.marker([facility.y, facility.x], { icon: aimIcon })
-      // console.log(facility)
-      return facilityMarkers
+  const getDeliveryRoute = async facilityPathList => {
+    let facilities = await new Promise((resolve, reject) => {
+      // 最近设施点
+      let facilities = facilityPathList.map(facilityPath => {
+        // console.log(facilityPath)
+        let facility = facilityPath.facility
+        let facilityMarkers = L.marker([facility.y, facility.x], { icon: aimIcon })
+        // console.log(facility)
+        return facilityMarkers
+      })
+      resolve(facilities)
     })
     console.log(facilityPathList)
-    let pathGuideItems = facilityPathList.map(facilityPath => {
-      let geojson = L.geoJSON(facilityPath.pathGuideItems, {
-        style: () => {
-          return { color: "#ffb676", weight: 5 }
-        },
-        onEachFeature: (feature, layer) => {
-          // console.log(feature, layer)
-          return L.polygon([feature.properties.bounds], {
-            color: "#ffb676",
+
+    let pathGuideItems = await new Promise((resolve, reject) => {
+      let pathGuideItems = facilityPathList.map(facilityPath => {
+        let geojson = L.geoJSON(facilityPath.pathGuideItems, {
+          style: () => {
+            return { color: "#ffb676", weight: 5 }
+          },
+          onEachFeature: (feature, layer) => {
+            // console.log(feature, layer)
+            return L.polygon([feature.properties.bounds], {
+              color: "#ffb676",
+            })
+          },
+        })
+          .bindPopup(function (layer) {
+            // console.log(layer)
+            return `${layer.feature.properties.description}\n${layer.feature.properties.distance}`
           })
-        },
+          .openPopup()
+          .on("mousemove", e => {
+            e.layer.openPopup()
+          })
+          .on("mouseout", e => e.layer.closePopup())
+          .on("click", e => {
+            // console.log(e)
+          })
+        return geojson
       })
-        .bindPopup(function (layer) {
-          // console.log(layer)
-          return `${layer.feature.properties.description}\n${layer.feature.properties.distance}`
-        })
-        .openPopup()
-        .on("mousemove", e => {
-          e.layer.openPopup()
-        })
-        .on("mouseout", e => e.layer.closePopup())
-        .on("click", e => {
-          // console.log(e)
-        })
-      return geojson
+      resolve(pathGuideItems)
     })
 
-    // 路线
-    let facilitiesRoute = facilityPathList.map(facilityPath => {
-      return L.geoJSON(facilityPath.route, {
-        style: () => {
-          return { color: "#ff7800", weight: 5, opacity: 0.65 }
-        },
+    let facilitiesRoute = await new Promise((resolve, reject) => {
+      // 路线
+      let facilitiesRoute = facilityPathList.map(facilityPath => {
+        return L.geoJSON(facilityPath.route, {
+          style: () => {
+            return { color: "#ff7800", weight: 5, opacity: 0.65 }
+          },
+        })
       })
+      resolve(facilitiesRoute)
     })
 
     // return L.featureGroup([...facilities, ...pathGuideItems, ...facilitiesRoute])
