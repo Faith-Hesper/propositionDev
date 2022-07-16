@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-16 10:23
+ * @LastEditTime: 2022-07-16 14:50
  * @Description:
  */
 
@@ -306,7 +306,7 @@ async function closestFacilitiesAnalyst({ eventPoint, facilityPonit, facilityNum
     networkAnalystService.findClosestFacilities(
       closestFacilitiesAnalystParameters,
       serviceResult => {
-        console.log(serviceResult)
+        // console.log(serviceResult)
         // let serviceAreaLists = serviceResult.result.serviceAreaList.map(serviceArea => {
         //   return serviceArea.serviceRegion
         // })

@@ -124,14 +124,15 @@
     MyCustomMap.editableLayers.addLayer(bufferLayerBind)
 
     // 范围内门店图层和坐标数组
-    let [geometryLayer, serviceAreaLatlng] = await getBufferShop(bufferLayer)
-    console.log(geometryLayer, serviceAreaLatlng)
+    let [geometryLayer, latlngArray, fitResultLayer] = await getBufferShop(bufferLayer)
+    formatShopData(fitResultLayer)
+    // console.log(geometryLayer, latlngArray)
 
-    await diliveryRouteAnalyst(serviceAreaLatlng)
+    await diliveryRouteAnalyst(latlngArray)
     // 最近设施分析
     // let facilityPathList = await closestFacilitiesAnalyst({
     //   eventPoint: MyCustomMap.aimMarkerLayer._latlng,
-    //   facilityPonit: serviceAreaLatlng,
+    //   facilityPonit: latlngArray,
     // })
     // // console.log(facilityPathList)
     // let facilitiesLayer = getDeliveryRoute(facilityPathList)
@@ -156,16 +157,16 @@
 
       // console.log(geometryLayer)
       // 商店坐标
-      let serviceAreaLatlng = await getServiceArea(geometryLayer)
-      if (serviceAreaLatlng) {
+      let { latlngArray, fitResultLayer } = await getServiceArea(geometryLayer)
+      if (latlngArray) {
         ElMessage({
           showClose: true,
-          message: `已查询到${serviceAreaLatlng.length}个商店`,
+          message: `已查询到${latlngArray.length}个商店`,
           type: "success",
         })
       }
 
-      return await Promise.all([geometryLayer, serviceAreaLatlng])
+      return await Promise.all([geometryLayer, latlngArray, fitResultLayer])
     } catch (error) {
       ElMessage({
         showClose: true,
@@ -180,24 +181,26 @@
   // 获取服务站点坐标 array 数据
   const getServiceArea = async serviceArea => {
     return await new Promise((resolve, reject) => {
-      let resultArray = []
-      serviceArea.features.forEach(feature => {
+      let latlngArray = []
+      let fitResultLayer = serviceArea.features.filter(feature => {
         // console.log(feature)
         // 筛选符合搜索名称的商店
         if (form.name) {
           if (feature.properties.NAME.indexOf(form.name) != -1) {
-            resultArray.push(L.latLng(feature.geometry.coordinates.reverse()))
+            latlngArray.push(L.latLng(feature.geometry.coordinates.reverse()))
+            return true
           }
         } else {
-          resultArray.push(L.latLng(feature.geometry.coordinates.reverse()))
+          latlngArray.push(L.latLng(feature.geometry.coordinates.reverse()))
+          return true
         }
       })
 
-      // console.log(resultArray)
-      if (resultArray.length === 0) {
+      // console.log(latlngArray)
+      if (latlngArray.length === 0) {
         reject("未查询到该商店,请重新输入商店名称")
       }
-      resolve(resultArray)
+      resolve({ latlngArray, fitResultLayer })
     })
   }
 
@@ -208,7 +211,7 @@
       facilityPonit: serviceAreaLatlng,
       facilityNum: form.shopNum,
     })
-    console.log(serviceAreaLatlng)
+    // console.log(serviceAreaLatlng)
     let facilitiesLayer = await getDeliveryRoute(facilityPathList)
   }
 
@@ -225,7 +228,7 @@
       })
       resolve(facilities)
     })
-    console.log(facilityPathList)
+    // console.log(facilityPathList)
 
     let pathGuideItems = await new Promise((resolve, reject) => {
       let pathGuideItems = facilityPathList.map(facilityPath => {

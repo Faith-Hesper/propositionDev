@@ -268,7 +268,11 @@
     <div class="diliverybar">
       <CardContainer title="物流配送">
         <template v-slot:content>
-          <GoodsDilivery v-if="MyCustomMap.map" :map="MyCustomMap.map"></GoodsDilivery>
+          <GoodsDilivery
+            v-if="MyCustomMap.map"
+            @shopData="showShopList"
+            :map="MyCustomMap.map"
+          ></GoodsDilivery>
         </template>
       </CardContainer>
     </div>
