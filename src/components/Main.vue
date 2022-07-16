@@ -250,6 +250,7 @@
       <CardContainer title="门店查询">
         <template v-slot:content>
           <StoreQuery
+            v-if="MyCustomMap.map"
             :map="MyCustomMap.map"
             @shopData="showShopList"
             @listLoading="() => MyCustomMap.listLoading"
@@ -267,7 +268,7 @@
     <div class="diliverybar">
       <CardContainer title="物流配送">
         <template v-slot:content>
-          <GoodsDilivery :map="MyCustomMap.map"></GoodsDilivery>
+          <GoodsDilivery v-if="MyCustomMap.map" :map="MyCustomMap.map"></GoodsDilivery>
         </template>
       </CardContainer>
     </div>

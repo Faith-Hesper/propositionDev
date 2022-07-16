@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-14 21:51
+ * @LastEditTime: 2022-07-16 10:23
  * @Description:
  */
 
@@ -173,8 +173,7 @@ function searchButton() {
   }
 }
 
-// 几何对象缓冲区分析
-async function bufferAnalyst(geometry) {
+function bufferAnalystParams(distance) {
   // 空间分析服务
   let bufferAnalystService = new L.supermap.SpatialAnalystService(
     BASE_CONFIG.BASEURL.spatialAnalystUrl
@@ -182,11 +181,17 @@ async function bufferAnalyst(geometry) {
   // 缓冲区分析参数
   let bufferSettings = new L.supermap.BufferSetting({
     endType: L.supermap.BufferEndType.ROUND,
-    leftDistance: new L.supermap.BufferDistance({ value: 3 }),
-    rightDistance: new L.supermap.BufferDistance({ value: 3 }),
+    leftDistance: new L.supermap.BufferDistance({ value: distance }),
+    rightDistance: new L.supermap.BufferDistance({ value: distance }),
     radiusUnit: L.supermap.BufferRadiusUnit.KILOMETER,
     semicircleLineSegment: 100,
   })
+  return { bufferAnalystService, bufferSettings }
+}
+
+// 几何对象缓冲区分析
+async function bufferAnalyst({ geometry, distance = 3 } = {}) {
+  let { bufferAnalystService, bufferSettings } = bufferAnalystParams(distance)
   // 几何对象缓冲区参数
   let geoBufferAnalystParams = new L.supermap.GeometryBufferAnalystParameters({
     sourceGeometry: geometry,
@@ -277,14 +282,14 @@ async function serviceAreaAnalyst(latlng) {
 }
 
 // 最近设施服务分析
-async function closestFacilitiesAnalyst({ eventPoint, facilityPonit }) {
+async function closestFacilitiesAnalyst({ eventPoint, facilityPonit, facilityNum = 10 } = {}) {
   let parameter = transportationAnalystParameter()
   // 最近设施服务参数
   let closestFacilitiesAnalystParameters = new L.supermap.FindClosestFacilitiesParameters({
     //事件点,必设参数
     event: eventPoint,
     //要查找的设施点数量。默认值为1
-    expectFacilityCount: 10,
+    expectFacilityCount: facilityNum,
     //设施点集合,必设
     facilities: facilityPonit,
     isAnalyzeById: false,

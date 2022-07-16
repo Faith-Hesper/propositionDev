@@ -11,10 +11,20 @@
               <el-input v-model="form.name"></el-input>
             </el-form-item>
             <el-form-item label="查询范围">
-              <el-input v-model="form.range"></el-input>
+              <el-input
+                v-model="form.range"
+                type="number"
+                placeholder="默认为3公里"
+                min="0"
+              ></el-input>
             </el-form-item>
             <el-form-item label="查询个数">
-              <el-input v-model="form.shopNum"></el-input>
+              <el-input
+                v-model="form.shopNum"
+                type="number"
+                placeholder="默认为10个"
+                min="0"
+              ></el-input>
             </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="searchFitShop">查询</el-button>
@@ -23,12 +33,16 @@
           </el-form>
         </div>
         <div class="querybtn">
-          <Draw
-            v-if="props.map"
-            :map="props.map"
-            :drawBtns="queryBtn"
-            @markerLayer="markerLayer"
-          ></Draw>
+          <el-popover placement="bottom" :width="50" trigger="hover" content="请选择目标点">
+            <template #reference>
+              <Draw
+                v-if="props.map"
+                :map="props.map"
+                :drawBtns="queryBtn"
+                @markerLayer="markerLayer"
+              ></Draw>
+            </template>
+          </el-popover>
         </div>
       </div>
     </div>
@@ -52,12 +66,13 @@
     control: null,
     editableLayers: null,
     loading: false,
-    form: null,
+    aimMarkerLayer: null,
+    aimMarker: null,
   })
   const form = reactive({
     name: "",
-    range: "",
-    shopNum: "",
+    range: 3,
+    shopNum: 10,
   })
   const queryBtn = [
     {
@@ -66,7 +81,9 @@
       type: "marker",
     },
   ]
-  MyCustomMap.editableLayers = L.featureGroup()
+  MyCustomMap.editableLayers = L.featureGroup().addTo(props.map)
+  MyCustomMap.aimMarker = L.featureGroup()
+
   let myRenderer = L.svg({ padding: 0.5 })
 
   MyCustomMap.editableLayers
@@ -81,45 +98,106 @@
     })
 
   const markerLayer = async resultLayer => {
-    MyCustomMap.editableLayers.clearLayers()
-    MyCustomMap.editableLayers.addTo(props.map)
+    MyCustomMap.aimMarker.clearLayers()
+    MyCustomMap.aimMarkerLayer = null
+    MyCustomMap.aimMarkerLayer = resultLayer
+    // console.log(resultLayer)
+    // MyCustomMap.editableLayers.addTo(props.map)
     // 3公里范围缓冲区
 
     // console.log(bufferLayer)
-    let rectangleLayerBind = L.marker(resultLayer._latlng, { icon: eventIcon }).bindPopup("起始点")
-    // MyCustomMap.editableLayers.addLayer(bufferLayerBind)
-    MyCustomMap.editableLayers.addLayer(rectangleLayerBind)
+    let markerLayerBind = L.marker(resultLayer._latlng, { icon: eventIcon })
+      .bindPopup("起始点")
+      .openPopup()
+    MyCustomMap.aimMarker.addLayer(markerLayerBind).addTo(props.map)
+  }
 
-    // // 最近设施分析
-    // let facilityPathList = await closestFacilitiesAnalyst(resultLayer._latlng, serviceAreaLatlng)
+  // 搜索符合条件的门店
+  const searchFitShop = async () => {
+    MyCustomMap.editableLayers.clearLayers()
+    // 缓冲区图层
+    let bufferLayer = await bufferAnalyst({
+      geometry: MyCustomMap.aimMarkerLayer,
+      distance: form.range,
+    })
+    let bufferLayerBind = L.geoJSON(bufferLayer).bindPopup("三公里").openPopup()
+    MyCustomMap.editableLayers.addLayer(bufferLayerBind)
+
+    let a = await getBufferShop()
+    console.log(a)
+
+    // 最近设施分析
+    // let facilityPathList = await closestFacilitiesAnalyst({
+    //   eventPoint: MyCustomMap.aimMarkerLayer._latlng,
+    //   facilityPonit: serviceAreaLatlng,
+    // })
+    // // console.log(facilityPathList)
     // let facilitiesLayer = getDeliveryRoute(facilityPathList)
-    // // console.log(facilities)
     // MyCustomMap.editableLayers.addLayer(facilitiesLayer)
   }
 
-  const searchFitShop = () => {}
-
   const reset = () => {
+    // if()
     form = null
   }
 
   const getBufferShop = async () => {
-    let bufferLayer = await bufferAnalyst(resultLayer)
-    let bufferLayerBind = L.geoJSON(bufferLayer).bindPopup("三公里").openPopup()
+    try {
+      let bufferLayer = await bufferAnalyst({
+        geometry: MyCustomMap.aimMarkerLayer,
+        distance: form.range,
+      })
+      let bufferLayerBind = L.geoJSON(bufferLayer).bindPopup("三公里").openPopup()
 
-    // 缓冲区内的商店
-    let geometryLayer = await searchByGeometry(bufferLayer)
-    // 商店坐标
-    let serviceAreaLatlng = getServiceArea(geometryLayer)
+      // 缓冲区内的商店
+      let geometryLayer = await searchByGeometry(bufferLayer)
+      if (geometryLayer.features.length === 0) {
+        Promise.reject(
+          `对不起，您周围${form.range}公里范围内未搜索到商店,请扩大搜索范围或更换目标点`
+        )
+      }
+
+      // console.log(geometryLayer)
+      // 商店坐标
+      let serviceAreaLatlng = await getServiceArea(geometryLayer)
+
+      return await Promise.all([bufferLayer, geometryLayer, serviceAreaLatlng])
+    } catch (error) {
+      ElMessage({
+        showClose: true,
+        message: `${error}`,
+        type: "error",
+      })
+      return "cw"
+      // console.log(error)
+    }
   }
 
+  // const getFitNameShop = (geometryLayer)=>{
+  //   if(form.name){
+  //     return geometryLayer.
+  //   }
+  // }
+
   // 获取服务站点坐标 array 数据
-  const getServiceArea = serviceArea => {
-    return serviceArea.features.map(feature => {
-      // console.log(feature)
-      let latlng = L.latLng(feature.geometry.coordinates.reverse())
-      // console.log(latlng)
-      return latlng
+  const getServiceArea = async serviceArea => {
+    return await new Promise((resolve, reject) => {
+      let resultArray = serviceArea.features.filter(feature => {
+        // console.log(feature)
+        // 筛选符合搜索名称的商店
+        if (form.name) {
+          if (feature.properties.NAME.indexOf(form.name) != -1) {
+            return L.latLng(feature.geometry.coordinates.reverse())
+          }
+        } else {
+          return L.latLng(feature.geometry.coordinates.reverse())
+        }
+      })
+
+      if (resultArray.length === 0) {
+        reject("未查询到该商店,请重新输入商店名称")
+      }
+      resolve(resultArray)
     })
   }
 
