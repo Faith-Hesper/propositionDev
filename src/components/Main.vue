@@ -88,7 +88,7 @@
     formatShopData(features)
     let layers = geoJsonBind(features)
 
-    MyCustomMap.map.flyTo(L.latLng(features.features[0].geometry.coordinates.reverse()), 12)
+    MyCustomMap.map.flyTo(L.latLng(features.features[0].geometry.coordinates.reverse()), 14)
     MyCustomMap.editableLayers.addLayer(layers)
     MyCustomMap.editableLayers.addTo(MyCustomMap.map)
     fullscreenLoading.value = false

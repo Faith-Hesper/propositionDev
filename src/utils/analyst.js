@@ -2,9 +2,11 @@
  * @Author: Faith
  * @Date: 2022-07-16 21:33
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-16 21:35
+ * @LastEditTime: 2022-07-17 18:22
  * @Description:
  */
+
+import { aimIcon } from "@/utils/map.js"
 
 // 获取缓冲区内的门店
 const getBufferShop = async bufferLayer => {
@@ -39,14 +41,14 @@ const getBufferShop = async bufferLayer => {
 }
 
 // 获取服务站点坐标 array 数据
-const getServiceArea = async serviceArea => {
+const getServiceArea = async ({ serviceArea, name = "" }) => {
   return await new Promise((resolve, reject) => {
     let latlngArray = []
-    let fitResultLayer = serviceArea.features.filter(feature => {
+    let fitResultLayerArr = serviceArea.features.filter(feature => {
       // console.log(feature)
       // 筛选符合搜索名称的商店
-      if (form.name) {
-        if (feature.properties.NAME.indexOf(form.name) != -1) {
+      if (name) {
+        if (feature.properties.NAME.indexOf(name) != -1) {
           latlngArray.push(L.latLng(feature.geometry.coordinates.reverse()))
           return true
         }
@@ -60,8 +62,40 @@ const getServiceArea = async serviceArea => {
     if (latlngArray.length === 0) {
       reject("未查询到该商店,请重新输入商店名称")
     }
-    resolve({ latlngArray, fitResultLayer })
+    resolve({ latlngArray, fitResultLayerArr })
   })
 }
 
-export { getBufferShop, getServiceArea }
+// 获取设施点 marker array
+const getfacilitiesPoint = async facilityPathList => {
+  let facilities = await new Promise((resolve, reject) => {
+    // 最近设施点
+    let facilities = facilityPathList.map(facilityPath => {
+      // console.log(facilityPath)
+      let facility = facilityPath.facility
+      let facilityMarkers = L.marker([facility.y, facility.x], { icon: aimIcon })
+      // console.log(facility)
+      return facilityMarkers
+    })
+    resolve(facilities)
+  })
+  return facilities
+}
+
+// 获取路线
+const getfacilitiesRoute = async facilityPathList => {
+  let facilitiesRoute = await new Promise((resolve, reject) => {
+    // 路线
+    let facilitiesRoute = facilityPathList.map(facilityPath => {
+      return L.geoJSON(facilityPath.route, {
+        style: () => {
+          return { color: "#ff7800", weight: 5, opacity: 0.65 }
+        },
+      })
+    })
+    resolve(facilitiesRoute)
+  })
+  return facilitiesRoute
+}
+
+export { getBufferShop, getServiceArea, getfacilitiesPoint, getfacilitiesRoute }

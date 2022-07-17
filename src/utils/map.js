@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-17 16:50
+ * @LastEditTime: 2022-07-17 18:53
  * @Description:
  */
 
@@ -118,7 +118,7 @@ async function searchByGeometry({ geometry, fromIndex = 0, toIndex = 19, count =
           })
           reject(serviceResult.error)
         } else {
-          console.log(serviceResult.result)
+          // console.log(serviceResult.result)
           if (serviceResult.result.featureCount < toIndex) {
             ElMessage({
               showClose: true,
