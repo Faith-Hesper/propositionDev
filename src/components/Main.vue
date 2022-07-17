@@ -231,6 +231,11 @@
     )
   }
 
+  const flyTOAim = row => {
+    // console.log(row)
+    MyCustomMap.map.flyTo(row, 14)
+  }
+
   onMounted(() => {
     // map = await mapObject('map')
     // let control = mapControl(map)
@@ -244,47 +249,49 @@
 <template>
   <div class="main">
     <div class="toolbar">
-      <Search @shopDetail="getShops"></Search>
-    </div>
-    <div class="querybar">
-      <CardContainer title="门店查询">
-        <template v-slot:content>
-          <StoreQuery
-            v-if="MyCustomMap.map"
-            :map="MyCustomMap.map"
-            @shopData="showShopList"
-            @listLoading="() => MyCustomMap.listLoading"
-          ></StoreQuery>
-        </template>
-      </CardContainer>
-    </div>
-    <div v-loading="MyCustomMap.listLoading" class="store-list">
-      <CardContainer title="查询结果">
-        <template v-slot:content>
-          <ShopForm :shopList="MyCustomMap.shopData"></ShopForm>
-        </template>
-      </CardContainer>
-    </div>
-    <div class="diliverybar">
-      <CardContainer title="物流配送">
-        <template v-slot:content>
-          <GoodsDilivery
-            v-if="MyCustomMap.map"
-            @shopData="showShopList"
-            :map="MyCustomMap.map"
-          ></GoodsDilivery>
-        </template>
-      </CardContainer>
-    </div>
-    <div class="drawBar">
-      <Draw
-        v-if="MyCustomMap.map"
-        :map="MyCustomMap.map"
-        :drawBtns="drawBtns"
-        @rectangleLayer="rectangleLayer"
-        @polygonLayer="polygonLayer"
-        @markerLayer="markerLayer"
-      ></Draw>
+      <div class="searchbar">
+        <Search @shopDetail="getShops"></Search>
+      </div>
+      <div class="querybar">
+        <CardContainer title="门店查询">
+          <template v-slot:content>
+            <StoreQuery
+              v-if="MyCustomMap.map"
+              :map="MyCustomMap.map"
+              @shopData="showShopList"
+              @listLoading="() => MyCustomMap.listLoading"
+            ></StoreQuery>
+          </template>
+        </CardContainer>
+      </div>
+      <div v-loading="MyCustomMap.listLoading" class="store-list">
+        <CardContainer title="查询结果">
+          <template v-slot:content>
+            <ShopForm @flyTOAim="flyTOAim" :shopList="MyCustomMap.shopData"></ShopForm>
+          </template>
+        </CardContainer>
+      </div>
+      <div class="diliverybar">
+        <CardContainer title="物流配送">
+          <template v-slot:content>
+            <GoodsDilivery
+              v-if="MyCustomMap.map"
+              @shopData="showShopList"
+              :map="MyCustomMap.map"
+            ></GoodsDilivery>
+          </template>
+        </CardContainer>
+      </div>
+      <div class="drawBar">
+        <Draw
+          v-if="MyCustomMap.map"
+          :map="MyCustomMap.map"
+          :drawBtns="drawBtns"
+          @rectangleLayer="rectangleLayer"
+          @polygonLayer="polygonLayer"
+          @markerLayer="markerLayer"
+        ></Draw>
+      </div>
     </div>
     <MapContainer
       v-loading.fullscreen.lock="!MyCustomMap.map"
@@ -302,52 +309,54 @@
     height: 700px;
   }
   .toolbar {
-    position: relative;
-    display: flex;
-    left: 60%;
-    width: 250px;
-    flex-direction: column;
-    padding: 5px 5px;
-    align-items: center;
-    text-align: center;
-    z-index: 5;
-  }
-  .drawBar {
-    width: 50px;
-    height: 100px;
-    position: absolute;
-    right: 0;
-    margin: 30px 10px 10px 0;
-    z-index: 5;
-    .el-button {
-      width: 50px;
+    .searchbar {
+      position: relative;
+      display: flex;
+      left: 60%;
+      width: 250px;
+      flex-direction: column;
+      padding: 5px 5px;
+      align-items: center;
+      text-align: center;
+      z-index: 5;
     }
-  }
-  .querybar {
-    position: absolute;
-    left: 0;
-    margin: 30px 0 0 10px;
-  }
-  .store-list {
-    position: absolute;
-    width: 400px;
-    margin: 0 10px;
-    top: 200px;
-    .list-header {
-      height: 25px;
-      background: #428bca;
-      span {
-        font-style: 14px;
-        line-height: 25px;
-        color: white;
+    .drawBar {
+      width: 50px;
+      height: 100px;
+      position: absolute;
+      right: 0;
+      margin: 30px 10px 10px 0;
+      z-index: 5;
+      .el-button {
+        width: 50px;
       }
     }
-  }
-  .diliverybar {
-    position: absolute;
-    margin: 0 10px;
-    right: 300px;
-    top: 200px;
-    z-index: 5;
+    .querybar {
+      position: absolute;
+      left: 0;
+      margin: 30px 0 0 10px;
+    }
+    .store-list {
+      position: absolute;
+      width: 400px;
+      margin: 0 10px;
+      top: 200px;
+      .list-header {
+        height: 25px;
+        background: #428bca;
+        span {
+          font-style: 14px;
+          line-height: 25px;
+          color: white;
+        }
+      }
+    }
+    .diliverybar {
+      position: absolute;
+      margin: 0 10px;
+      right: 300px;
+      top: 200px;
+      z-index: 5;
+    }
   }
 </style>

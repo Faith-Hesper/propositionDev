@@ -1,22 +1,24 @@
 <template>
   <div v-dialogDrag:[draggable]="true">
     <div class="dialog_content">
-      <div v-if="status" class="card-show">
-        <el-button @click=";(status = false), (draggable = true)">
-          <slot name="icon"></slot>
-        </el-button>
-      </div>
-      <div v-else class="card-hidden">
-        <el-card :body-style="{ padding: 0 }">
-          <div class="header dialog_header">
-            <div class="title">{{ props.title }}</div>
-            <el-button size="small" type="primary" @click=";(status = true), (draggable = false)"
-              >隐藏</el-button
-            >
-          </div>
-          <slot name="content"></slot>
-        </el-card>
-      </div>
+      <transition name="slide-fade">
+        <div v-if="status" class="card-show">
+          <el-button @click=";(status = false), (draggable = true)">
+            <slot name="icon"></slot>
+          </el-button>
+        </div>
+        <div v-else class="card-hidden">
+          <el-card :body-style="{ padding: 0 }">
+            <div class="header dialog_header">
+              <div class="title">{{ props.title }}</div>
+              <el-button size="small" type="primary" @click=";(status = true), (draggable = false)"
+                >隐藏</el-button
+              >
+            </div>
+            <slot name="content"></slot>
+          </el-card>
+        </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -57,5 +59,18 @@
   .dialog_content {
     position: fixed;
     z-index: 5;
+  }
+  .slide-fade-enter-active {
+    transition: all 0.3s ease-out;
+  }
+
+  .slide-fade-leave-active {
+    transition: all 0.5s cubic-bezier(1, 0.5, 0.8, 1);
+  }
+
+  .slide-fade-enter-from,
+  .slide-fade-leave-to {
+    transform: translateX(20px);
+    opacity: 0;
   }
 </style>

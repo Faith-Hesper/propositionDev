@@ -2,11 +2,12 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-16 14:50
+ * @LastEditTime: 2022-07-17 16:50
  * @Description:
  */
 
 import { SuperMap, tiandituTileLayer } from "@supermap/iclient-leaflet"
+import initIcon from "@/assets/images/init.png"
 import market from "@/assets/images/bag-heart-fill.svg"
 import icon1 from "@/assets/images/icon1.png"
 import icon2 from "@/assets/images/icon2.png"
@@ -15,29 +16,25 @@ import icon2 from "@/assets/images/icon2.png"
 // leaflet-draw 1.0.4 绘制rectangle bug
 window.type = true
 
-let greenIcon = L.icon({
+let CustomIcon = L.Icon.extend({
+  options: {
+    iconUrl: initIcon,
+    iconSize: [30, 41], // size of the icon
+    shadowSize: [41, 41], // size of the shadow
+    iconAnchor: [12, 30], // point of the icon which will correspond to marker's location
+    shadowAnchor: [4, 62], // the same for the shadow
+    popupAnchor: [1, -34], // point from which the popup should open relative to the iconAnchor
+  },
+})
+
+let greenIcon = new CustomIcon({
   iconUrl: market,
-  iconSize: [30, 41], // size of the icon
-  shadowSize: [41, 41], // size of the shadow
-  iconAnchor: [12, 30], // point of the icon which will correspond to marker's location
-  shadowAnchor: [4, 62], // the same for the shadow
-  popupAnchor: [1, -34], // point from which the popup should open relative to the iconAnchor
 })
-let eventIcon = L.icon({
+let eventIcon = new CustomIcon({
   iconUrl: icon1,
-  iconSize: [30, 41], // size of the icon
-  shadowSize: [41, 41], // size of the shadow
-  iconAnchor: [12, 30], // point of the icon which will correspond to marker's location
-  shadowAnchor: [4, 62], // the same for the shadow
-  popupAnchor: [1, -34], // point from which the popup should open relative to the iconAnchor
 })
-let aimIcon = L.icon({
+let aimIcon = new CustomIcon({
   iconUrl: icon2,
-  iconSize: [30, 41], // size of the icon
-  shadowSize: [41, 41], // size of the shadow
-  iconAnchor: [12, 30], // point of the icon which will correspond to marker's location
-  shadowAnchor: [4, 62], // the same for the shadow
-  popupAnchor: [1, -34], // point from which the popup should open relative to the iconAnchor
 })
 
 // 初始化地图对象
@@ -54,12 +51,15 @@ async function mapObject(id) {
 }
 
 // 范围查询、根据绘制的矩形查询矩形内的图层 从数据服务中查询
-async function searchByBounds(bounds) {
+async function searchByBounds({ bounds, fromIndex = 0, toIndex = 19, count = 20 } = {}) {
+  toIndex = toIndex === 19 ? count - 1 : toIndex
   // 范围查询参数
   const boundsParam = await new Promise((resolve, reject) => {
     const params = new L.supermap.GetFeaturesByBoundsParameters({
       datasetNames: ["ChengduFresh:Shop"],
       bounds: bounds,
+      fromIndex: fromIndex,
+      toIndex: toIndex,
     })
     resolve(params)
   })
@@ -76,6 +76,14 @@ async function searchByBounds(bounds) {
           })
           reject(serviceResult.error)
         } else {
+          if (serviceResult.result.featureCount < toIndex) {
+            ElMessage({
+              showClose: true,
+              dangerouslyUseHTMLString: true,
+              message: `<p>对不起,您当前搜索的商店数量太多</p><p>当前一共为您找到${serviceResult.result.featureCount}家商店</p><p>实际周围一共有${serviceResult.result.totalCount}家商店</p>`,
+              type: "warning",
+            })
+          }
           resolve(serviceResult.result.features)
         }
       })
@@ -84,12 +92,15 @@ async function searchByBounds(bounds) {
 }
 
 // 几何查询、根据绘制的几何对象查询几何对象对的图层 从数据服务中查询
-async function searchByGeometry(polygon) {
+async function searchByGeometry({ geometry, fromIndex = 0, toIndex = 19, count = 20 }) {
+  toIndex = toIndex === 19 ? count - 1 : toIndex
   // 几何查询参数
   const geometryParam = await new Promise((resolve, reject) => {
     const params = new L.supermap.GetFeaturesByGeometryParameters({
       datasetNames: ["ChengduFresh:Shop"],
-      geometry: polygon,
+      geometry: geometry,
+      fromIndex: fromIndex,
+      toIndex: toIndex,
     })
     resolve(params)
   })
@@ -98,6 +109,7 @@ async function searchByGeometry(polygon) {
     L.supermap
       .featureService(BASE_CONFIG.BASEURL.dataUrl)
       .getFeaturesByGeometry(geometryParam, function (serviceResult) {
+        // console.log(serviceResult)
         if (serviceResult.type === "processFailed") {
           ElMessage({
             showClose: true,
@@ -106,6 +118,15 @@ async function searchByGeometry(polygon) {
           })
           reject(serviceResult.error)
         } else {
+          console.log(serviceResult.result)
+          if (serviceResult.result.featureCount < toIndex) {
+            ElMessage({
+              showClose: true,
+              dangerouslyUseHTMLString: true,
+              message: `<p>对不起,您当前搜索的商店数量太多</p><p>当前一共为您找到${serviceResult.result.featureCount}家商店</p><p>实际周围一共有${serviceResult.result.totalCount}家商店</p>`,
+              type: "warning",
+            })
+          }
           resolve(serviceResult.result.features)
         }
       })
@@ -328,6 +349,7 @@ async function closestFacilitiesAnalyst({ eventPoint, facilityPonit, facilityNum
 
 export default mapObject
 export {
+  CustomIcon,
   greenIcon,
   eventIcon,
   aimIcon,

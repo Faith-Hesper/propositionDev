@@ -1,17 +1,45 @@
 <template>
   <div class="store">
     <div class="box-card">
-      <!-- <div class="box-header">
-        <span>门店查询</span>
-      </div> -->
       <div class="box-body">
-        <div class="querybtn">
+        <div v-if="formShow" class="query-form">
+          <div class="title">查询{{ form.range }}公里范围内商店</div>
+          <el-form ref="formRef" size="small" status-icon :rules="rules" :model="form">
+            <el-form-item label="商店名称">
+              <el-input v-model.trim="form.name"></el-input>
+            </el-form-item>
+            <el-form-item label="查询范围" prop="range">
+              <el-input
+                v-model.number="form.range"
+                type="number"
+                placeholder="默认为3公里"
+                min="0"
+              ></el-input>
+            </el-form-item>
+            <el-form-item label="查询个数" prop="shopNum">
+              <el-input
+                v-model.number="form.shopNum"
+                type="number"
+                placeholder="默认为10个"
+                min="0"
+              ></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="searchFitShop">查询</el-button>
+              <el-button type="primary" @click="reset">重置</el-button>
+              <el-button type="primary" @click="formShow = false">返回</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+        <div v-else class="querybtn">
+          <div class="title">查询范围内商店</div>
           <Draw
             v-if="props.map"
             :map="props.map"
             :drawBtns="queryBtn"
             @rectangleLayer="rectangleLayer"
             @polygonLayer="polygonLayer"
+            @markerLayer="markerLayer"
           ></Draw>
         </div>
       </div>
@@ -33,11 +61,43 @@
   import { nextTick, reactive, ref, shallowReactive } from "vue"
   const props = defineProps({ map: { type: Object, default: () => null } })
   const emits = defineEmits(["listLoading", "shopData"])
+  const formShow = ref(false)
   const MyCustomMap = shallowReactive({
     control: null,
     editableLayers: null,
     loading: false,
+    aimMarkerLayer: null,
   })
+
+  const form = reactive({
+    name: "",
+    range: 3,
+    shopNum: 10,
+  })
+
+  const checkNum = (rule, value, callback) => {
+    // console.log(rule, value)
+    if (!value) {
+      callback()
+    }
+    setTimeout(() => {
+      // console.log(value)
+      if (value <= 0) {
+        callback(new Error("请输入大于0的数字"))
+      }
+      callback()
+    }, 700)
+  }
+  const rules = reactive({
+    range: [{ validator: checkNum, trigger: "change" }],
+    shopNum: [{ validator: checkNum, trigger: "change" }],
+  })
+  const reset = () => {
+    // if()
+    // form = null
+    console.log(form)
+    form.deleteProperty()
+  }
   const queryBtn = [
     {
       id: 0,
@@ -49,8 +109,13 @@
       name: "多边形查询",
       type: "polygon",
     },
+    {
+      id: 2,
+      name: "条件查询",
+      type: "marker",
+    },
   ]
-  MyCustomMap.editableLayers = L.featureGroup()
+  MyCustomMap.editableLayers = L.featureGroup().addTo(props.map)
 
   MyCustomMap.editableLayers
     .on("mouseover", e => {
@@ -63,10 +128,10 @@
   const rectangleLayer = async resultLayer => {
     MyCustomMap.editableLayers.clearLayers()
     // 绘制图层
-    MyCustomMap.editableLayers.addLayer(resultLayer).addTo(props.map)
+    MyCustomMap.editableLayers.addLayer(resultLayer)
     emits("listLoading", true)
     // 查询到的要素
-    let { features } = await searchByBounds(resultLayer._bounds)
+    let { features } = await searchByBounds({ bounds: resultLayer._bounds })
     formatShopData(features)
     let layer = geoJsonBind(features)
     MyCustomMap.editableLayers.addLayer(layer)
@@ -76,27 +141,115 @@
   const polygonLayer = async resultLayer => {
     // fullscreenLoading.value = true
     MyCustomMap.editableLayers.clearLayers()
-    MyCustomMap.editableLayers.addLayer(resultLayer).addTo(props.map)
+    MyCustomMap.editableLayers.addLayer(resultLayer)
     emits("listLoading", true)
     // console.log(resultLayer)
-    let { features } = await searchByGeometry(L.polygon(resultLayer._latlngs))
+    let { features } = await searchByGeometry({ geometry: L.polygon(resultLayer._latlngs) })
     formatShopData(features)
     let layer = geoJsonBind(features)
     MyCustomMap.editableLayers.addLayer(layer)
     // fullscreenLoading.value = false
   }
 
+  const markerLayer = async resultLayer => {
+    MyCustomMap.editableLayers.clearLayers()
+    // console.log(bufferLayer)
+    MyCustomMap.aimMarkerLayer = null
+    MyCustomMap.aimMarkerLayer = resultLayer
+    formShow.value = true
+    let markerLayerBind = L.marker(resultLayer._latlng, { icon: greenIcon })
+      .bindPopup("起始点")
+      .openPopup()
+    MyCustomMap.editableLayers.addLayer(markerLayerBind)
+  }
+
+  const searchFitShop = async () => {
+    emits("listLoading", true)
+    // 缓冲区图层
+    let bufferLayer = await bufferAnalyst({
+      geometry: MyCustomMap.aimMarkerLayer,
+      distance: form.range,
+    })
+    let bufferLayerBind = L.geoJSON(bufferLayer).bindPopup("三公里").openPopup()
+    MyCustomMap.editableLayers.addLayer(bufferLayerBind)
+
+    // 范围内门店图层和坐标数组
+    let [geometryLayer, latlngArray, fitResultLayer] = await getBufferShop(bufferLayer)
+    formatShopData(fitResultLayer)
+  }
+
   const geoJsonBind = features => {
     return L.geoJSON(features, {
       pointToLayer: (feature, latlng) => {
         return L.marker(latlng, { icon: greenIcon }).bindPopup(`
-  <div class="shop">
-  <p>店名：${feature.properties.NAME}</p>
-  <p>品类：${feature.properties.CATEGORY}</p>
-  <p>价格：${feature.properties.PRICE}元/kg</p>
-  </div>
-  `)
+    <div class="shop">
+    <p>店名：${feature.properties.NAME}</p>
+    <p>品类：${feature.properties.CATEGORY}</p>
+    <p>价格：${feature.properties.PRICE}元/kg</p>
+    </div>
+    `)
       },
+    })
+  }
+
+  // 获取缓冲区内的门店
+  const getBufferShop = async bufferLayer => {
+    try {
+      // 缓冲区内的商店
+      let geometryLayer = await searchByGeometry({ geometry: bufferLayer, count: form.shopNum })
+      if (geometryLayer.features.length === 0) {
+        Promise.reject(
+          `对不起，您周围${form.range}公里范围内未搜索到商店,请扩大搜索范围或更换目标点`
+        )
+      }
+
+      // console.log(geometryLayer)
+      // 商店坐标
+      let { latlngArray, fitResultLayer } = await getServiceArea(geometryLayer)
+      if (latlngArray) {
+        ElMessage({
+          showClose: true,
+          message: `已查询到${latlngArray.length}个商店`,
+          type: "success",
+        })
+      }
+
+      return await Promise.all([geometryLayer, latlngArray, fitResultLayer])
+    } catch (error) {
+      ElMessage({
+        showClose: true,
+        message: `${error}`,
+        type: "warning",
+      })
+      return error
+      // console.log(error)
+    }
+  }
+
+  // 获取服务站点坐标 array 数据
+  const getServiceArea = async serviceArea => {
+    return await new Promise((resolve, reject) => {
+      let latlngArray = []
+      let fitResultLayer = serviceArea.features.filter(feature => {
+        // console.log(feature)
+        // 筛选符合搜索名称的商店
+
+        if (form.name) {
+          if (feature.properties.NAME.indexOf(form.name) != -1) {
+            latlngArray.push(L.latLng(feature.geometry.coordinates.reverse()))
+            return true
+          }
+        } else {
+          latlngArray.push(L.latLng(feature.geometry.coordinates.reverse()))
+          return true
+        }
+      })
+
+      // console.log(latlngArray)
+      if (latlngArray.length === 0) {
+        reject("未查询到该商店,请重新输入商店名称")
+      }
+      resolve({ latlngArray, fitResultLayer })
     })
   }
 
@@ -113,21 +266,25 @@
 <style lang="less" scoped>
   .store {
     .box-card {
-      width: 200px;
-      .box-header {
-        height: 25px;
-        background: #428bca;
-        span {
-          font-style: 14px;
-          line-height: 25px;
-          color: white;
-        }
-      }
+      width: 250px;
       .box-body {
         width: 100%;
+        .title {
+          width: 100%;
+          font-size: 14px;
+          font-weight: bold;
+          color: grey;
+          background: #e4eef6;
+        }
+        /deep/ .el-form-item__content {
+          justify-content: center;
+        }
         .querybtn {
           width: 100%;
-          height: 50px;
+          height: 60px;
+          display: flex;
+          flex-direction: column;
+          align-content: space-around;
           .draw-btn {
             flex-direction: row;
             .el-button {

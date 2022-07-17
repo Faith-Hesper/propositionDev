@@ -15,6 +15,7 @@
   import "leaflet-draw"
   import "@/utils/L.draw-local"
   import { onUnmounted, reactive } from "vue"
+  import { eventIcon } from "@/utils/map.js"
   const props = defineProps({
     map: { type: Object, default: () => null },
     drawBtns: { type: Array, required: true, default: [] },
@@ -50,6 +51,9 @@
         fillOpacity: 0.2,
         clickable: true,
       },
+    },
+    marker: {
+      icon: eventIcon,
     },
   }
 
@@ -92,7 +96,7 @@
         draw.drawControl = new L.Draw.Polygon(props.map, options.polygon)
         break
       case "marker":
-        draw.drawControl = new L.Draw.Marker(props.map)
+        draw.drawControl = new L.Draw.Marker(props.map, options.marker)
         break
       default:
         break

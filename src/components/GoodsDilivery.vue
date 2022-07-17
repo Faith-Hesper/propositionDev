@@ -1,39 +1,41 @@
 <template>
   <div class="dilivery">
-    <div class="box-card">
-      <!-- <div class="box-header">
-        <span>物流配送</span>
-      </div> -->
-      <div class="box-body">
-        <div class="main-args">
-          <el-form>
+    <div class="box-body">
+      <div v-if="formShow" class="main-args">
+        <div class="title">查询{{ form.range }}公里范围内商店</div>
+        <div class="form">
+          <el-form ref="formRef" size="small" status-icon :rules="rules" :model="form">
             <el-form-item label="商店名称">
-              <el-input v-model="form.name"></el-input>
+              <el-input v-model.trim="form.name"></el-input>
             </el-form-item>
-            <el-form-item label="查询范围">
+            <el-form-item label="查询范围" prop="range">
               <el-input
-                v-model="form.range"
+                v-model.number="form.range"
                 type="number"
                 placeholder="默认为3公里"
                 min="0"
               ></el-input>
             </el-form-item>
-            <el-form-item label="查询个数">
+            <el-form-item label="查询个数" prop="shopNum">
               <el-input
-                v-model="form.shopNum"
+                v-model.number="form.shopNum"
                 type="number"
                 placeholder="默认为10个"
                 min="0"
               ></el-input>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="searchFitShop">查询</el-button>
-              <el-button type="primary" @click="reset">重置</el-button>
+              <el-button type="primary" size="small" @click="searchFitShop">查询</el-button>
+              <el-button type="primary" @click="reset(formRef)">重置</el-button>
+              <el-button type="primary" @click="formShow = false">返回</el-button>
             </el-form-item>
           </el-form>
         </div>
-        <div class="querybtn">
-          <el-popover placement="bottom" :width="50" trigger="hover" content="请选择目标点">
+      </div>
+      <div v-else class="querybtn">
+        <div class="title">添加目标点</div>
+        <div class="btn">
+          <el-popover placement="bottom" width="50" trigger="hover" content="请添加目标点">
             <template #reference>
               <Draw
                 v-if="props.map"
@@ -43,6 +45,7 @@
               ></Draw>
             </template>
           </el-popover>
+          <el-button size="small" @click="clearLayer">清除图层</el-button>
         </div>
       </div>
     </div>
@@ -59,20 +62,43 @@
     bufferAnalyst,
     closestFacilitiesAnalyst,
   } from "@/utils/map.js"
-  import { nextTick, reactive, ref, shallowReactive } from "vue"
+  import { arrFeatureToGeoJson } from "@/utils/tool.js"
+  import { nextTick, onUnmounted, reactive, ref, shallowReactive } from "vue"
   const props = defineProps({ map: { type: Object, default: () => null } })
   const emits = defineEmits(["listLoading", "shopData"])
+  const formShow = ref(false)
+  // const formRef = ref()
   const MyCustomMap = shallowReactive({
     control: null,
     editableLayers: null,
     loading: false,
     aimMarkerLayer: null,
+  })
+  const layers = shallowReactive({
     aimMarker: null,
+    regionMarkers: null,
   })
   const form = reactive({
     name: "",
     range: 3,
     shopNum: 10,
+  })
+  const checkNum = (rule, value, callback) => {
+    // console.log(rule, value)
+    if (!value) {
+      callback()
+    }
+    setTimeout(() => {
+      // console.log(value)
+      if (value <= 0) {
+        callback(new Error("请输入大于0的数字"))
+      }
+      callback()
+    }, 700)
+  }
+  const rules = reactive({
+    range: [{ validator: checkNum, trigger: "change" }],
+    shopNum: [{ validator: checkNum, trigger: "change" }],
   })
   const queryBtn = [
     {
@@ -81,13 +107,15 @@
       type: "marker",
     },
   ]
+
   MyCustomMap.editableLayers = L.featureGroup().addTo(props.map)
-  MyCustomMap.aimMarker = L.featureGroup()
+  layers.aimMarker = L.featureGroup().addTo(MyCustomMap.editableLayers)
+  layers.regionMarkers = L.featureGroup()
 
   let myRenderer = L.svg({ padding: 0.5 })
 
   MyCustomMap.editableLayers
-    .on("mousemove", e => {
+    .on("mouseover", e => {
       // console.log(e)
       // e.target.popupopen()
       e.layer.openPopup()
@@ -95,26 +123,36 @@
     .on("mouseout", e => e.layer.closePopup())
     .on("click", e => {
       // console.log(e)
+      e.layer.openPopup()
     })
+    .on("contextmenu", e => {})
 
-  const markerLayer = async resultLayer => {
-    MyCustomMap.aimMarker.clearLayers()
+  const markerLayer = resultLayer => {
+    layers.aimMarker.clearLayers()
     MyCustomMap.aimMarkerLayer = null
     MyCustomMap.aimMarkerLayer = resultLayer
+    formShow.value = true
     // console.log(resultLayer)
     // MyCustomMap.editableLayers.addTo(props.map)
     // 3公里范围缓冲区
-
+    // L.marker(resultLayer._latlng, { icon: eventIcon })
     // console.log(bufferLayer)
-    let markerLayerBind = L.marker(resultLayer._latlng, { icon: eventIcon })
-      .bindPopup("起始点")
-      .openPopup()
-    MyCustomMap.aimMarker.addLayer(markerLayerBind).addTo(props.map)
+    let markerLayerBind = resultLayer.bindPopup("起始点").openPopup()
+    layers.aimMarker.addLayer(markerLayerBind)
   }
 
   // 搜索符合条件的门店
   const searchFitShop = async () => {
-    MyCustomMap.editableLayers.clearLayers()
+    clearLayer()
+    layers.regionMarkers.clearLayers()
+    if (!MyCustomMap.aimMarkerLayer) {
+      ElMessage({
+        showClose: true,
+        message: `请先选择目标点`,
+        type: "warning",
+      })
+      return
+    }
     // 缓冲区图层
     let bufferLayer = await bufferAnalyst({
       geometry: MyCustomMap.aimMarkerLayer,
@@ -124,31 +162,33 @@
     MyCustomMap.editableLayers.addLayer(bufferLayerBind)
 
     // 范围内门店图层和坐标数组
-    let [geometryLayer, latlngArray, fitResultLayer] = await getBufferShop(bufferLayer)
-    formatShopData(fitResultLayer)
-    // console.log(geometryLayer, latlngArray)
-
-    await diliveryRouteAnalyst(latlngArray)
-    // 最近设施分析
-    // let facilityPathList = await closestFacilitiesAnalyst({
-    //   eventPoint: MyCustomMap.aimMarkerLayer._latlng,
-    //   facilityPonit: latlngArray,
-    // })
-    // // console.log(facilityPathList)
-    // let facilitiesLayer = getDeliveryRoute(facilityPathList)
-    // MyCustomMap.editableLayers.addLayer(facilitiesLayer)
+    let [geometryLayer, latlngArray, fitResultLayerArr] = await getBufferShop(bufferLayer)
+    formatShopData(fitResultLayerArr)
+    // console.log(latlngArray, fitResultLayerArr)
+    let fitResultLayer = arrFeatureToGeoJson(fitResultLayerArr)
+    // console.log(fitResultLayer)
+    let fitResultLayerBind = geoJsonBind(geometryLayer)
+    console.log(fitResultLayerBind)
+    layers.regionMarkers.addLayer(fitResultLayerBind).addTo(MyCustomMap.editableLayers)
+    // layers.regionMarkers.addLayer(fitResultLayerBind)
+    // layers.regionMarkers.addLayer(fitResultLayerBind).addTo(props.map)
+    let layer = await diliveryRouteAnalyst(latlngArray)
+    console.log(layer)
+    layer.addTo(props.map)
   }
 
-  const reset = () => {
+  const reset = formRef => {
     // if()
-    form = null
+    // form = null
+    console.log(formRef)
+    formRef.resetFields()
   }
 
   // 获取缓冲区内的门店
   const getBufferShop = async bufferLayer => {
     try {
       // 缓冲区内的商店
-      let geometryLayer = await searchByGeometry(bufferLayer)
+      let geometryLayer = await searchByGeometry({ geometry: bufferLayer, count: form.shopNum })
       if (geometryLayer.features.length === 0) {
         Promise.reject(
           `对不起，您周围${form.range}公里范围内未搜索到商店,请扩大搜索范围或更换目标点`
@@ -157,16 +197,16 @@
 
       // console.log(geometryLayer)
       // 商店坐标
-      let { latlngArray, fitResultLayer } = await getServiceArea(geometryLayer)
+      let { latlngArray, fitResultLayerArr } = await getServiceArea(geometryLayer)
       if (latlngArray) {
         ElMessage({
           showClose: true,
-          message: `已查询到${latlngArray.length}个商店`,
+          message: `已查询到${latlngArray.length}家商店`,
           type: "success",
         })
       }
 
-      return await Promise.all([geometryLayer, latlngArray, fitResultLayer])
+      return await Promise.all([geometryLayer, latlngArray, fitResultLayerArr])
     } catch (error) {
       ElMessage({
         showClose: true,
@@ -182,9 +222,10 @@
   const getServiceArea = async serviceArea => {
     return await new Promise((resolve, reject) => {
       let latlngArray = []
-      let fitResultLayer = serviceArea.features.filter(feature => {
+      let fitResultLayerArr = serviceArea.features.filter(feature => {
         // console.log(feature)
         // 筛选符合搜索名称的商店
+
         if (form.name) {
           if (feature.properties.NAME.indexOf(form.name) != -1) {
             latlngArray.push(L.latLng(feature.geometry.coordinates.reverse()))
@@ -196,11 +237,10 @@
         }
       })
 
-      // console.log(latlngArray)
       if (latlngArray.length === 0) {
         reject("未查询到该商店,请重新输入商店名称")
       }
-      resolve({ latlngArray, fitResultLayer })
+      resolve({ latlngArray, fitResultLayerArr })
     })
   }
 
@@ -209,76 +249,81 @@
     let facilityPathList = await closestFacilitiesAnalyst({
       eventPoint: MyCustomMap.aimMarkerLayer._latlng,
       facilityPonit: serviceAreaLatlng,
-      facilityNum: form.shopNum,
+      facilityNum: 1,
     })
     // console.log(serviceAreaLatlng)
     let facilitiesLayer = await getDeliveryRoute(facilityPathList)
+    return facilitiesLayer
   }
 
   // 获取配送路线
   const getDeliveryRoute = async facilityPathList => {
-    let facilities = await new Promise((resolve, reject) => {
-      // 最近设施点
-      let facilities = facilityPathList.map(facilityPath => {
-        // console.log(facilityPath)
-        let facility = facilityPath.facility
-        let facilityMarkers = L.marker([facility.y, facility.x], { icon: aimIcon })
-        // console.log(facility)
-        return facilityMarkers
+    try {
+      let facilities = await new Promise((resolve, reject) => {
+        // 最近设施点
+        let facilities = facilityPathList.map(facilityPath => {
+          // console.log(facilityPath)
+          let facility = facilityPath.facility
+          let facilityMarkers = L.marker([facility.y, facility.x], { icon: aimIcon })
+          // console.log(facility)
+          return facilityMarkers
+        })
+        resolve(facilities)
       })
-      resolve(facilities)
-    })
-    // console.log(facilityPathList)
+      // console.log(facilityPathList)
 
-    let pathGuideItems = await new Promise((resolve, reject) => {
-      let pathGuideItems = facilityPathList.map(facilityPath => {
-        let geojson = L.geoJSON(facilityPath.pathGuideItems, {
-          style: () => {
-            return { color: "#ffb676", weight: 5 }
-          },
-          onEachFeature: (feature, layer) => {
-            // console.log(feature, layer)
-            return L.polygon([feature.properties.bounds], {
-              color: "#ffb676",
+      let pathGuideItems = await new Promise((resolve, reject) => {
+        let pathGuideItems = facilityPathList.map(facilityPath => {
+          let geojson = L.geoJSON(facilityPath.pathGuideItems, {
+            style: () => {
+              return { color: "#ffb676", weight: 5 }
+            },
+            onEachFeature: (feature, layer) => {
+              // console.log(feature, layer)
+              return L.polygon([feature.properties.bounds], {
+                color: "#ffb676",
+              })
+            },
+          })
+            .bindPopup(function (layer) {
+              // console.log(layer)
+              return `${layer.feature.properties.description}\n${layer.feature.properties.distance}米`
             })
-          },
+            .openPopup()
+            .on("mousemove", e => {
+              e.layer.openPopup()
+            })
+            .on("mouseout", e => e.layer.closePopup())
+            .on("click", e => {
+              // console.log(e)
+            })
+          return geojson
         })
-          .bindPopup(function (layer) {
-            // console.log(layer)
-            return `${layer.feature.properties.description}\n${layer.feature.properties.distance}`
-          })
-          .openPopup()
-          .on("mousemove", e => {
-            e.layer.openPopup()
-          })
-          .on("mouseout", e => e.layer.closePopup())
-          .on("click", e => {
-            // console.log(e)
-          })
-        return geojson
+        resolve(pathGuideItems)
       })
-      resolve(pathGuideItems)
-    })
-
-    let facilitiesRoute = await new Promise((resolve, reject) => {
-      // 路线
-      let facilitiesRoute = facilityPathList.map(facilityPath => {
-        return L.geoJSON(facilityPath.route, {
-          style: () => {
-            return { color: "#ff7800", weight: 5, opacity: 0.65 }
-          },
+      console.log([...pathGuideItems])
+      let facilitiesRoute = await new Promise((resolve, reject) => {
+        // 路线
+        let facilitiesRoute = facilityPathList.map(facilityPath => {
+          return L.geoJSON(facilityPath.route, {
+            style: () => {
+              return { color: "#ff7800", weight: 5, opacity: 0.65 }
+            },
+          })
         })
+        resolve(facilitiesRoute)
       })
-      resolve(facilitiesRoute)
-    })
 
-    // return L.featureGroup([...facilities, ...pathGuideItems, ...facilitiesRoute])
-    return L.featureGroup([...pathGuideItems])
+      // return L.featureGroup([...facilities, ...pathGuideItems, ...facilitiesRoute])
+      return await Promise.resolve(L.featureGroup([...pathGuideItems]))
+    } catch (error) {}
   }
 
   const geoJsonBind = features => {
     return L.geoJSON(features, {
-      pointToLayer: (feature, latlng) => {
+      pointToLayer: (feature, latLng) => {
+        console.log(feature, latLng)
+        let latlng = [latLng.lat, latLng.lng].reverse()
         return L.marker(latlng, { icon: greenIcon }).bindPopup(`
   <div class="shop">
   <p>店名：${feature.properties.NAME}</p>
@@ -298,27 +343,61 @@
     )
     emits("shopData", data)
   }
+
+  const clearLayer = () => {
+    if (!MyCustomMap.editableLayers) return
+    props.map.removeLayer(MyCustomMap.editableLayers)
+    MyCustomMap.editableLayers.clearLayers()
+    layers.regionMarkers.clearLayers()
+    MyCustomMap.editableLayers.addTo(props.map)
+  }
+
+  const clearAllLayer = () => {
+    if (!MyCustomMap.editableLayers) return
+    props.map.removeLayer(MyCustomMap.editableLayers)
+    MyCustomMap.editableLayers.clearLayers()
+    layers.aimMarker.clearLayers()
+    layers.regionMarkers.clearLayers()
+    MyCustomMap.editableLayers.addTo(props.map)
+  }
+
+  onUnmounted(() => {
+    clearAllLayer()
+  })
 </script>
 
 <style lang="less" scoped>
   .dilivery {
-    .box-card {
-      width: 250px;
-      .box-header {
-        height: 25px;
-        background: #428bca;
-        span {
-          font-style: 14px;
-          line-height: 25px;
-          color: white;
+    width: 250px;
+    .box-body {
+      width: 100%;
+      .title {
+        width: 100%;
+        font-size: 14px;
+        font-weight: bold;
+        color: grey;
+        background: #e4eef6;
+      }
+      .main-args {
+        .form {
+          text-align: center;
+        }
+        /deep/ .el-form-item__content {
+          justify-content: center;
         }
       }
-      .box-body {
+      .querybtn {
         width: 100%;
-        .querybtn {
-          width: 100%;
-          height: 50px;
+        // height: 60px;
+        display: flex;
+        flex-direction: column;
+        .btn {
+          display: flex;
+          justify-content: space-around;
+          align-content: center;
+          padding: 5px 0;
           .draw-btn {
+            width: 50%;
             flex-direction: row;
             .el-button {
               width: 20px;
