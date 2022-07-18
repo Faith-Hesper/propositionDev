@@ -22,8 +22,11 @@
 
   const Shops = ref([])
   const shopName = ref("")
+  let sqlParam = {
+    fromIndex: 0,
+    toIndex: 19,
+  }
   const querySearch = (queryString, callback) => {
-    getShops(shopName.value)
     let result = queryString ? Shops.value.filter(createFilter(queryString)) : Shops.value
     callback(result)
   }
@@ -38,7 +41,10 @@
     shopSearch()
   }
 
-  const change = item => {
+  const change = async item => {
+    if (!Shops.value) {
+      await getShopsData("")
+    }
     console.log(item)
   }
 
@@ -46,22 +52,56 @@
   const shopSearch = async () => {
     if (!shopName.value) return
     let { totalCount, features } = await searchBySql(shopName.value, { toIndex: 30 })
-    // if(totalCount>32){
-    //   await searchBySql(shopName.value, {fromIndex: 30 },{ toIndex: 1000 })
-    // }
     emit("shopDetail", features)
   }
 
   // 输入框获取商店数据
   const getShops = async shops => {
     let { features } = await searchBySql(shops)
-    // console.log(fetures)
+    // console.log(features)
     Shops.value = features.features.map(data => {
       return { value: data.properties.NAME, name: data.properties.NAME }
     })
   }
 
-  getShops(shopName.value)
+  // getShops(shopName.value)
+  // 存储 商店名称
+  const getShopsData = async shops => {
+    let { totalCount, features } = await searchBySql(shops, {
+      fromIndex: sqlParam.fromIndex,
+      toIndex: sqlParam.toIndex,
+    })
+    if (sqlParam.toIndex + 1 < totalCount) {
+      sqlParam.fromIndex = sqlParam.toIndex + 1
+      sqlParam.toIndex += 19
+      setTimeout(async () => {
+        await getShopsData("")
+      }, 1000)
+    }
+    new Promise((resolve, reject) => {
+      let shopSuggestion = features.features.map(data => {
+        return { value: data.properties.NAME, name: data.properties.NAME }
+      })
+
+      Shops.value.push(...shopSuggestion)
+      resolve("")
+    })
+  }
+
+  let nowTime = new Date().getTime()
+  let oldTime = localStorage.getItem("timestamp")
+  let time = (nowTime - oldTime) / (1000 * 60 * 60 * 24)
+  if (!localStorage.getItem("shops") || time > 30 || !oldTime) {
+    let timestamp = new Date().getTime()
+    localStorage.setItem("timestamp", timestamp.toString())
+    getShopsData("").then(() => {
+      localStorage.setItem("shops", JSON.stringify(Shops.value))
+    })
+    // console.log("执行")
+  } else {
+    let data = localStorage.getItem("shops")
+    Shops.value = JSON.parse(data)
+  }
 
   // const fields =async()=>{await getFieldsName()}
   // console.log(fields());

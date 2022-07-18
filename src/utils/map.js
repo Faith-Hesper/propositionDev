@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-17 18:53
+ * @LastEditTime: 2022-07-17 21:35
  * @Description:
  */
 
@@ -119,7 +119,10 @@ async function searchByGeometry({ geometry, fromIndex = 0, toIndex = 19, count =
           reject(serviceResult.error)
         } else {
           // console.log(serviceResult.result)
-          if (serviceResult.result.featureCount < toIndex) {
+          if (
+            serviceResult.result.featureCount < toIndex &&
+            serviceResult.result.featureCount != 0
+          ) {
             ElMessage({
               showClose: true,
               dangerouslyUseHTMLString: true,
@@ -139,6 +142,7 @@ async function searchBySql(shop = "店", ...args) {
     name: "Shop",
     attributeFilter: `Name like '%${shop}%'`,
   }
+  console.log(args)
   let sqlParameters = {
     queryParameter,
     datasetNames: ["ChengduFresh:Shop"],

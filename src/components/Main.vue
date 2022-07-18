@@ -3,11 +3,15 @@
   import Search from "@/components/Search"
   import Draw from "@/components/Draw"
   import DrawMap from "@/components/DrawMap"
-  import DrawMapBtn from "@/components/DrawMapBtn"
   import StoreQuery from "@/components/StoreQuery"
   import CardContainer from "@/components/CardContainer"
   import GoodsDilivery from "@/components/GoodsDilivery"
+  import ServiceRegion from "@/components/ServiceRegion"
   import {
+    CustomIcon,
+    greenIcon,
+    eventIcon,
+    aimIcon,
     searchByBounds,
     searchByGeometry,
     bufferAnalyst,
@@ -17,17 +21,9 @@
   import { nextTick, onMounted, reactive, ref, shallowReactive } from "vue"
 
   const fullscreenLoading = ref(false)
+  const listLoading = ref(false)
   const url = "http://localhost:8090/iserver/services/map-ChengduFresh/rest/maps/ChengduMap"
-  import supermarket from "@/assets/images/supermarket.png"
-  import market from "@/assets/images/bag-heart-fill.svg"
-  let greenIcon = L.icon({
-    iconUrl: market,
-    iconSize: [30, 41], // size of the icon
-    shadowSize: [41, 41], // size of the shadow
-    iconAnchor: [12, 30], // point of the icon which will correspond to marker's location
-    shadowAnchor: [4, 62], // the same for the shadow
-    popupAnchor: [1, -34], // point from which the popup should open relative to the iconAnchor
-  })
+
   const drawBtns = [
     {
       id: 0,
@@ -60,7 +56,6 @@
   // 添加图层切换控件
   const mapInit = mapObject => {
     MyCustomMap.map = mapObject.map
-    L.marker([30.667439, 104.079654], { icon: greenIcon }).addTo(MyCustomMap.map)
     let overlayer = L.supermap
       .tiledMapLayer(BASE_CONFIG.BASEURL.mapUrl, {
         cacheEnabled: true,
@@ -219,7 +214,7 @@
 
   const showShopList = data => {
     MyCustomMap.shopData = data
-    MyCustomMap.listLoading = false
+    listLoading.value = false
   }
 
   const formatShopData = async features => {
@@ -259,15 +254,24 @@
               v-if="MyCustomMap.map"
               :map="MyCustomMap.map"
               @shopData="showShopList"
-              @listLoading="() => MyCustomMap.listLoading"
+              @listLoading="
+                status => {
+                  listLoading = status
+                }
+              "
             ></StoreQuery>
           </template>
         </CardContainer>
       </div>
-      <div v-loading="MyCustomMap.listLoading" class="store-list">
+      <div class="store-list">
         <CardContainer title="查询结果">
           <template v-slot:content>
-            <ShopForm @flyTOAim="flyTOAim" :shopList="MyCustomMap.shopData"></ShopForm>
+            <ShopForm
+              v-loading="listLoading"
+              element-loading-text="列表数据加载中"
+              @flyTOAim="flyTOAim"
+              :shopList="MyCustomMap.shopData"
+            ></ShopForm>
           </template>
         </CardContainer>
       </div>
@@ -282,7 +286,7 @@
           </template>
         </CardContainer>
       </div>
-      <div class="drawBar">
+      <div class="drawbar">
         <Draw
           v-if="MyCustomMap.map"
           :map="MyCustomMap.map"
@@ -292,6 +296,12 @@
           @markerLayer="markerLayer"
         ></Draw>
       </div>
+      <div class="serviceareabar">
+        <ServiceRegion v-if="MyCustomMap.map" :map="MyCustomMap.map"></ServiceRegion>
+      </div>
+      <!-- <div class="showheat">
+        <el-button @click="showHotMap"></el-button>
+      </div> -->
     </div>
     <MapContainer
       v-loading.fullscreen.lock="!MyCustomMap.map"
@@ -320,7 +330,7 @@
       text-align: center;
       z-index: 5;
     }
-    .drawBar {
+    .drawbar {
       width: 50px;
       height: 100px;
       position: absolute;
@@ -356,6 +366,10 @@
       margin: 0 10px;
       right: 300px;
       top: 200px;
+      z-index: 5;
+    }
+    .serviceareabar {
+      position: absolute;
       z-index: 5;
     }
   }

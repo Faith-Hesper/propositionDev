@@ -193,6 +193,7 @@
       let geometryLayer = await searchByGeometry({ geometry: bufferLayer, count: form.shopNum })
       if (geometryLayer.features.length === 0) {
         let error = `对不起，您周围${form.range}公里范围内未搜索到商店,请扩大搜索范围或更换目标点`
+        props.map.flyTo([30.67, 104.07], 12)
         throw new Error(error)
       }
 
