@@ -12,7 +12,7 @@
 
 <script setup>
   import { searchBySql, serviceAreaAnalyst } from "@/utils/map.js"
-  import { arrFeatureToGeoJson, randomColor } from "@/utils/tool.js"
+  import { arrFeatureToGeoJson, randomColor, cacheShopData } from "@/utils/tool.js"
   import { nextTick, onMounted, reactive, ref, shallowReactive } from "vue"
 
   const props = defineProps({ map: { type: Object, default: () => null } })
@@ -28,40 +28,50 @@
   serviceObject.serviceLayer = L.featureGroup().addTo(props.map)
 
   const showSearviceRegion = async () => {
-    let { totalCount, features } = await searchBySql("", {
-      fromIndex: sqlParam.fromIndex,
-      toIndex: sqlParam.toIndex,
-    })
-    if (sqlParam.toIndex + 1 < totalCount) {
-      sqlParam.fromIndex = sqlParam.toIndex + 1
-      sqlParam.toIndex += 19
-      setTimeout(() => {
-        showSearviceRegion()
-      }, 3000)
+    if (!featuresArr) {
+      cacheShopData()
+      let featuresData = localStorage.getItem("shopsFeatures")
+      let geoFeature = JSON.parse(featuresData)
+      Myfeatures = []
+      Myfeatures.push(geoFeature)
     }
-    let serviceAreaArray = await getLatLngArr(features)
-    // 服务区分析
-    let serviceAreaList = await serviceAreaAnalyst(serviceAreaArray)
-    let serviceRegion = serviceAreaList.map(serviceArea => {
-      return serviceArea.serviceRegion
-    })
-    let geoServiceRegion = arrFeatureToGeoJson(serviceRegion)
-    let serviceRegionLayer = await new Promise((resolve, reject) => {
-      return L.geoJSON(geoServiceRegion, {
-        style: () => {
-          let color = randomColor()
-          return { color: color, weight: 1 }
-        },
+    // await new Promise(async (resolve, reject) => {
+    let serviceAreaArray = await getLatLngArr(Myfeatures[0])
+
+    // 并发执行
+    let analyst = serviceAreaArray.map(async arr => {
+      // 服务区分析
+      let serviceAreaList = await serviceAreaAnalyst([arr])
+      let serviceRegion = await new Promise((resolve, reject) => {
+        let result = serviceAreaList.map(serviceArea => {
+          return serviceArea.serviceRegion
+        })
+        resolve(result)
+      })
+      let geoServiceRegion = Promise.resolve(arrFeatureToGeoJson(serviceRegion))
+      let serviceRegionLayer = await new Promise((resolve, reject) => {
+        let result = L.geoJSON(geoServiceRegion, {
+          style: () => {
+            // let color = randomColor()
+            // return { color: color, weight: 1 }
+          },
+        })
+        resolve(result)
+      }).then(serviceRegionLayer => {
+        console.log(serviceRegionLayer)
+        serviceObject.serviceLayer.addLayer(serviceRegionLayer)
       })
     })
-    console.log(serviceRegionLayer)
-    serviceObject.serviceLayer.addLayer(serviceRegionLayer)
+    Promise.all(analyst)
+    // })
+    // resolve("")
+    // })
   }
 
   const getLatLngArr = async features => {
     return await new Promise((resolve, reject) => {
       let latlngArray = []
-      // console.log(feature)
+      // console.log(features)
       features.features.map(feature => {
         latlngArray.push(L.latLng(feature.geometry.coordinates.reverse()))
       })
@@ -70,21 +80,36 @@
   }
 
   const showHotMap = async () => {
-    let { totalCount, features } = await searchBySql("", {
-      fromIndex: 0,
-      toIndex: 155,
-    })
-    Myfeatures.push(features)
+    if (!featuresArr) {
+      // let { totalCount, features } = await searchBySql("", {
+      //   fromIndex: 0,
+      //   toIndex: 155,
+      // })
+      // console.log("获取数据")
+      // Myfeatures.push(features)
+      cacheShopData()
+      let featuresData = localStorage.getItem("shopsFeatures")
+      let geoFeature = JSON.parse(featuresData)
+      Myfeatures = []
+      Myfeatures.push(geoFeature)
+    }
     let heatMapLayer = new L.supermap.HeatMapLayer("heatMap", {
       id: "heatmap",
       map: props.map,
-      radius: 10,
-      featureWeight: 10,
+      radius: 50,
+      // featureWeight: 100,
     })
-    console.log(...Myfeatures)
+    console.log(Myfeatures)
     let geojson = Myfeatures[0]
     heatMapLayer.addFeatures(geojson)
     heatMapLayer.addTo(props.map)
+    props.map.flyTo([30.67, 104.07], 12)
+  }
+
+  const featuresArr = localStorage.getItem("shopsFeatures")
+  if (featuresArr) {
+    let geoFeature = JSON.parse(featuresArr)
+    Myfeatures.push(geoFeature)
   }
 </script>
 

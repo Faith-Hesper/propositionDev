@@ -211,7 +211,7 @@
         })
       }
 
-      return await Promise.all([geometryLayer, latlngArray, fitResultLayerArr])
+      return await Promise.resolve([geometryLayer, latlngArray, fitResultLayerArr])
     } catch (error) {
       ElMessage({
         showClose: true,

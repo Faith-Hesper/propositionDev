@@ -17,6 +17,7 @@
 
 <script setup>
   import { searchBySql, getFieldsName } from "@/utils/map.js"
+  import { cacheShopData } from "@/utils/tool.js"
   import { ref } from "vue"
   const emit = defineEmits(["shopDetail"])
 
@@ -78,13 +79,16 @@
         await getShopsData("")
       }, 1000)
     }
-    new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       let shopSuggestion = features.features.map(data => {
         return { value: data.properties.NAME, name: data.properties.NAME }
       })
-
+      console.log("执行")
       Shops.value.push(...shopSuggestion)
-      resolve("")
+      if (sqlParam.toIndex + 1 > totalCount) {
+        console.log("ok")
+        resolve("")
+      }
     })
   }
 
@@ -94,9 +98,10 @@
   if (!localStorage.getItem("shops") || time > 30 || !oldTime) {
     let timestamp = new Date().getTime()
     localStorage.setItem("timestamp", timestamp.toString())
-    getShopsData("").then(() => {
-      localStorage.setItem("shops", JSON.stringify(Shops.value))
-    })
+    cacheShopData()
+    // getShopsData("").then(() => {
+    //   localStorage.setItem("shops", JSON.stringify(Shops.value))
+    // })
     // console.log("执行")
   } else {
     let data = localStorage.getItem("shops")
