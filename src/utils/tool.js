@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-17 14:05
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-19 20:44
+ * @LastEditTime: 2022-07-20 20:53
  * @Description:
  */
 import { searchBySql } from "@/utils/map.js"
@@ -17,7 +17,7 @@ function arrFeatureToGeoJson(arr) {
 function randomColor() {
   let color = "#"
   for (let i = 0; i < 8; i++) {
-    color += parseInt(Math.random() * 16).toString()
+    color += parseInt(Math.random() * 16).toString(16)
   }
   return color
 }

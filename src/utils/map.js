@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-19 21:50
+ * @LastEditTime: 2022-07-20 21:21
  * @Description:
  */
 
@@ -76,7 +76,7 @@ async function searchByBounds({ bounds, fromIndex = 0, toIndex = 19, count = 20 
           })
           reject(serviceResult.error)
         } else {
-          if (serviceResult.result.featureCount < toIndex) {
+          if (serviceResult.result.totalCount < toIndex) {
             ElMessage({
               showClose: true,
               dangerouslyUseHTMLString: true,
@@ -118,11 +118,8 @@ async function searchByGeometry({ geometry, fromIndex = 0, toIndex = 19, count =
           })
           reject(serviceResult.error)
         } else {
-          // console.log(serviceResult.result)
-          if (
-            serviceResult.result.featureCount > toIndex &&
-            serviceResult.result.featureCount != 0
-          ) {
+          console.log(serviceResult.result)
+          if (serviceResult.result.totalCount > toIndex && serviceResult.result.featureCount != 0) {
             ElMessage({
               showClose: true,
               dangerouslyUseHTMLString: true,

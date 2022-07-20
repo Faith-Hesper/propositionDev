@@ -249,6 +249,9 @@
       </div>
       <div class="querybar">
         <CardContainer title="门店查询">
+          <template v-slot:icon>
+            <i>门店查询</i>
+          </template>
           <template v-slot:content>
             <StoreQuery
               v-if="MyCustomMap.map"
@@ -265,6 +268,9 @@
       </div>
       <div class="store-list">
         <CardContainer title="查询结果">
+          <template v-slot:icon>
+            <span>查询结果</span>
+          </template>
           <template v-slot:content>
             <ShopForm
               v-loading="listLoading"
@@ -277,6 +283,9 @@
       </div>
       <div class="diliverybar">
         <CardContainer title="物流配送">
+          <template v-slot:icon>
+            <i>物流配送</i>
+          </template>
           <template v-slot:content>
             <GoodsDilivery
               v-if="MyCustomMap.map"
@@ -345,12 +354,14 @@
       position: absolute;
       left: 0;
       margin: 30px 0 0 10px;
+      z-index: 5;
     }
     .store-list {
       position: absolute;
       width: 400px;
       margin: 0 10px;
       top: 200px;
+      z-index: 5;
       .list-header {
         height: 25px;
         background: #428bca;
@@ -365,11 +376,14 @@
       position: absolute;
       margin: 0 10px;
       right: 300px;
-      top: 200px;
+      top: 300px;
       z-index: 5;
     }
     .serviceareabar {
       position: absolute;
+      margin: 0 10px;
+      right: 100px;
+      top: 200px;
       z-index: 5;
     }
   }

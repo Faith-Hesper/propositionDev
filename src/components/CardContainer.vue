@@ -1,32 +1,30 @@
 <template>
-  <div v-dialogDrag:[draggable]="true">
-    <div class="dialog_content">
-      <transition name="slide-fade">
-        <div v-if="status" class="card-show">
-          <el-button @click=";(status = false), (draggable = true)">
-            <slot name="icon"></slot>
-          </el-button>
-        </div>
-        <div v-else class="card-hidden">
-          <el-card :body-style="{ padding: 0 }">
-            <div class="header dialog_header">
-              <div class="title">{{ props.title }}</div>
-              <el-button size="small" type="primary" @click=";(status = true), (draggable = false)"
-                >隐藏</el-button
-              >
-            </div>
-            <slot name="content"></slot>
-          </el-card>
-        </div>
-      </transition>
-    </div>
+  <div class="draggable" v-dialogDrag:[draggable]="true">
+    <transition name="slide-fade">
+      <div v-if="status" class="card-show">
+        <el-button @click=";(status = false), (draggable = true)">
+          <slot name="icon"></slot>
+        </el-button>
+      </div>
+      <div v-else class="dialog_content card-hidden">
+        <el-card :body-style="{ padding: 0 }">
+          <div class="header dialog_header">
+            <div class="title">{{ props.title }}</div>
+            <el-button size="small" type="primary" @click=";(status = true), (draggable = false)"
+              >隐藏</el-button
+            >
+          </div>
+          <slot name="content"></slot>
+        </el-card>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
   import directives from "@/utils/directive"
   import { ref } from "vue"
-  const status = ref(false)
+  const status = ref(true)
   const draggable = ref(true)
   const props = defineProps({
     title: {
@@ -37,6 +35,11 @@
 </script>
 
 <style lang="less" scoped>
+  .draggable {
+    width: 100px;
+    height: 100%;
+  }
+
   .card-hidden {
     position: relative;
     .header {

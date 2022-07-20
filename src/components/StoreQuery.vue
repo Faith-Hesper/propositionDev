@@ -1,47 +1,46 @@
 <template>
   <div class="store">
-    <div class="box-body">
-      <div v-if="formShow" class="query-form">
-        <div class="title">查询{{ form.range }}公里范围内商店</div>
-        <el-form ref="formRef" size="small" status-icon :rules="rules" :model="form">
-          <el-form-item label="商店名称">
-            <el-input v-model.trim="form.name"></el-input>
-          </el-form-item>
-          <el-form-item label="查询范围" prop="range">
-            <el-input
-              v-model.number="form.range"
-              type="number"
-              placeholder="默认为3公里"
-              min="0"
-            ></el-input>
-          </el-form-item>
-          <el-form-item label="查询个数" prop="shopNum">
-            <el-input
-              v-model.number="form.shopNum"
-              type="number"
-              placeholder="默认为10个"
-              min="0"
-            ></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="searchFitShop">查询</el-button>
-            <el-button type="primary" @click="reset">重置</el-button>
-            <el-button type="primary" @click="formShow = false">返回</el-button>
-          </el-form-item>
-        </el-form>
-      </div>
-      <div v-else class="querybtn">
-        <div class="title">查询范围内商店</div>
-        <Draw
-          v-if="props.map"
-          :map="props.map"
-          :drawBtns="queryBtn"
-          @rectangleLayer="rectangleLayer"
-          @polygonLayer="polygonLayer"
-          @markerLayer="markerLayer"
-        ></Draw>
-      </div>
+    <div v-if="formShow" class="query-form">
+      <div class="title">查询{{ form.range }}公里范围内商店</div>
+      <el-form ref="formRef" size="small" status-icon :rules="rules" :model="form">
+        <el-form-item label="商店名称">
+          <el-input v-model.trim="form.name"></el-input>
+        </el-form-item>
+        <el-form-item label="查询范围" prop="range">
+          <el-input
+            v-model.number="form.range"
+            type="number"
+            placeholder="默认为3公里"
+            min="0"
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="查询个数" prop="shopNum">
+          <el-input
+            v-model.number="form.shopNum"
+            type="number"
+            placeholder="默认为10个"
+            min="0"
+          ></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="searchFitShop">查询</el-button>
+          <el-button type="primary" @click="reset">重置</el-button>
+          <el-button type="primary" @click="formShow = false">返回</el-button>
+        </el-form-item>
+      </el-form>
     </div>
+    <div v-else class="querybtn">
+      <div class="title">查询范围内商店</div>
+      <Draw
+        v-if="props.map"
+        :map="props.map"
+        :drawBtns="queryBtn"
+        @rectangleLayer="rectangleLayer"
+        @polygonLayer="polygonLayer"
+        @markerLayer="markerLayer"
+      ></Draw>
+    </div>
+    <!-- </div> -->
   </div>
 </template>
 
@@ -264,29 +263,26 @@
 <style lang="less" scoped>
   .store {
     width: 250px;
-    .box-body {
+    .title {
       width: 100%;
-      .title {
-        width: 100%;
-        font-size: 14px;
-        font-weight: bold;
-        color: grey;
-        background: #e4eef6;
-      }
-      /deep/ .el-form-item__content {
-        justify-content: center;
-      }
-      .querybtn {
-        width: 100%;
-        height: 60px;
-        display: flex;
-        flex-direction: column;
-        align-content: space-around;
-        .draw-btn {
-          flex-direction: row;
-          .el-button {
-            width: 20px;
-          }
+      font-size: 14px;
+      font-weight: bold;
+      color: grey;
+      background: #e4eef6;
+    }
+    /deep/ .el-form-item__content {
+      justify-content: center;
+    }
+    .querybtn {
+      width: 100%;
+      height: 60px;
+      display: flex;
+      flex-direction: column;
+      align-content: space-around;
+      .draw-btn {
+        flex-direction: row;
+        .el-button {
+          width: 20px;
         }
       }
     }

@@ -1,11 +1,9 @@
 <template>
   <div class="service-region">
-    <div class="box-body">
-      <div class="analystbtn">
-        <!-- <div class="title">查询范围内商店</div> -->
-        <el-button @click="showSearviceRegion">展示服务范围</el-button>
-        <el-button @click="showHotMap">隐藏</el-button>
-      </div>
+    <div class="analystbtn">
+      <!-- <div class="title">查询范围内商店</div> -->
+      <el-button @click="showSearviceRegion">展示服务范围</el-button>
+      <el-button @click="showHotMap">隐藏</el-button>
     </div>
   </div>
 </template>
@@ -35,7 +33,7 @@
       Myfeatures = []
       Myfeatures.push(geoFeature)
     }
-    // await new Promise(async (resolve, reject) => {
+
     let serviceAreaArray = await getLatLngArr(Myfeatures[0])
 
     // 并发执行
@@ -48,19 +46,31 @@
         })
         resolve(result)
       })
-      let geoServiceRegion = Promise.resolve(arrFeatureToGeoJson(serviceRegion))
-      let serviceRegionLayer = await new Promise((resolve, reject) => {
+      let geoServiceRegion = await Promise.resolve(arrFeatureToGeoJson(serviceRegion))
+      // let serviceRegionLayer =
+      await new Promise((resolve, reject) => {
         let result = L.geoJSON(geoServiceRegion, {
-          style: () => {
-            // let color = randomColor()
+          onEachFeature: (feature, layer) => {
+            let color = randomColor()
+            console.log(color)
+            // console.log(feature, layer)
+            let serviceRegionLayer = L.geoJSON(feature.geometry, {
+              style: () => {
+                return { color: color }
+              },
+            })
+            serviceObject.serviceLayer.addLayer(serviceRegionLayer)
+            // console.log(a)
+            // return
             // return { color: color, weight: 1 }
           },
         })
         resolve(result)
-      }).then(serviceRegionLayer => {
-        console.log(serviceRegionLayer)
-        serviceObject.serviceLayer.addLayer(serviceRegionLayer)
       })
+      // .then(serviceRegionLayer => {
+      // console.log(serviceRegionLayer)
+      // serviceObject.serviceLayer.addLayer(serviceRegionLayer)
+      // })
     })
     Promise.all(analyst)
     // })
@@ -116,29 +126,26 @@
 <style lang="less" scoped>
   .service-region {
     width: 250px;
-    .box-body {
+    .title {
       width: 100%;
-      .title {
-        width: 100%;
-        font-size: 14px;
-        font-weight: bold;
-        color: grey;
-        background: #e4eef6;
-      }
-      /deep/ .el-form-item__content {
-        justify-content: center;
-      }
-      .analystbtn {
-        width: 100%;
-        height: 60px;
-        display: flex;
-        flex-direction: column;
-        align-content: space-around;
-        .draw-btn {
-          flex-direction: row;
-          .el-button {
-            width: 20px;
-          }
+      font-size: 14px;
+      font-weight: bold;
+      color: grey;
+      background: #e4eef6;
+    }
+    /deep/ .el-form-item__content {
+      justify-content: center;
+    }
+    .analystbtn {
+      width: 100%;
+      height: 60px;
+      display: flex;
+      flex-direction: column;
+      align-content: space-around;
+      .draw-btn {
+        flex-direction: row;
+        .el-button {
+          width: 20px;
         }
       }
     }
