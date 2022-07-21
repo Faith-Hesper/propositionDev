@@ -8,7 +8,7 @@
   import GoodsDilivery from "@/components/GoodsDilivery"
   import ServiceRegion from "@/components/ServiceRegion"
   import {
-    CustomIcon,
+    // CustomIcon,
     greenIcon,
     eventIcon,
     aimIcon,
@@ -319,6 +319,7 @@
       style="position: absolute"
     >
     </MapContainer>
+    <div class="route"></div>
   </div>
 </template>
 
@@ -386,5 +387,12 @@
       top: 200px;
       z-index: 5;
     }
+  }
+  .route {
+    position: absolute;
+    margin: 0 10px;
+    right: 100px;
+    bottom: 200px;
+    z-index: 5;
   }
 </style>
