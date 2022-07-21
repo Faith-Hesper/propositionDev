@@ -52,14 +52,16 @@
 
 <script setup>
   import Draw from "@/components/Draw"
+  import { antPath } from "leaflet-ant-path"
   import {
-    greenIcon,
-    eventIcon,
-    aimIcon,
+    // greenIcon,
+    // eventIcon,
+    // aimIcon,
     searchByGeometry,
     bufferAnalyst,
     closestFacilitiesAnalyst,
   } from "@/utils/map.js"
+  import { greenIcon, pointIcon } from "@/utils/Icon.js"
   import { arrFeatureToGeoJson } from "@/utils/tool.js"
   import { getServiceArea, getfacilitiesPoint, getfacilitiesRoute } from "@/utils/analyst.js"
   import { nextTick, onUnmounted, reactive, ref, shallowReactive } from "vue"
@@ -82,6 +84,18 @@
     range: 3,
     shopNum: 10,
   })
+
+  const options = {
+    delay: 400,
+    dashArray: [10, 20],
+    weight: 5,
+    color: "#0000FF",
+    pulseColor: "#FFFFFF",
+    paused: false,
+    reverse: false,
+    hardwareAccelerated: true,
+  }
+
   const checkNum = (rule, value, callback) => {
     // console.log(rule, value)
     if (!value) {
@@ -165,12 +179,13 @@
     let fitResultLayerBind = geoJsonBind(fitResultLayer)
 
     layers.regionMarkers.addLayer(fitResultLayerBind).addTo(MyCustomMap.editableLayers)
+    // MyCustomMap.editableLayers.removeLayer(bufferLayerBind)
     // layers.regionMarkers.addLayer(fitResultLayerBind)
     // layers.regionMarkers.addLayer(fitResultLayerBind).addTo(props.map)
 
     let routelayer = await diliveryRouteAnalyst(latlngArray)
-
-    routelayer.addTo(MyCustomMap.editableLayers)
+    console.log(routelayer)
+    // routelayer.addTo(MyCustomMap.editableLayers)
   }
 
   const reset = formRef => {
@@ -189,6 +204,7 @@
     let bufferLayerBind = L.geoJSON(bufferLayer)
       .bindPopup("三公里", { autoClose: false, closeOnClick: false })
       .openPopup()
+    props.map.fitBounds(bufferLayerBind.getBounds())
     MyCustomMap.editableLayers.addLayer(bufferLayerBind)
     return await Promise.resolve(bufferLayer)
   }
@@ -248,8 +264,10 @@
       let facilities = await getfacilitiesPoint(facilityPathList)
       // console.log(facilityPathList)
 
+      let allRoute = []
       // 路线导航
       let pathGuideItemsPromise = facilityPathList.map(facilityPath => {
+        let route = []
         let geojson = L.geoJSON(facilityPath.pathGuideItems, {
           pointToLayer: (point, latlng) => {
             let a = MyCustomMap.aimMarkerLayer.getLatLng()
@@ -258,29 +276,42 @@
               // console.log("object")
               return
             }
-            return L.marker(latlng, { icon: aimIcon })
+            return L.marker(latlng, { icon: pointIcon })
           },
           style: () => {
             return { color: "#ffb676", weight: 8 }
           },
           onEachFeature: (feature, layer) => {
             // console.log(feature, layer)
-            return L.polygon([feature.properties.bounds], {
-              color: "#ffb676",
+            route.push({
+              distance: feature.properties.distance,
+              description: feature.properties.description,
             })
+            let polygon = L.bounds([feature.properties.bounds])
+            console.log(polygon)
+            // let result = antPath(polygon.getBounds(), options)
+            // console.log(result)
+            // props.map.addLayer(result)
+            // MyCustomMap.editableLayers.addLayer(result)
+            // return L.polygon([feature.properties.bounds], {
+            //   color: "#ffb676",
+            // })
           },
-        }).bindPopup(function (layer) {
-          // console.log(layer)
-          return `${layer.feature.properties.description}\n${layer.feature.properties.distance}米`
         })
-        // .openPopup()
-        // .on("mousemove", e => {
-        //   e.layer.openPopup()
-        // })
-        // .on("mouseout", e => e.layer.closePopup())
-        // .on("click", e => {
-        //   // console.log(e)
-        // })
+          .bindPopup(function (layer) {
+            // console.log(layer)
+            return `${layer.feature.properties.description}\n${layer.feature.properties.distance}米`
+          })
+          .openPopup()
+          .on("mousemove", e => {
+            e.layer.openPopup()
+          })
+          .on("mouseout", e => e.layer.closePopup())
+          .on("click", e => {
+            // console.log(e)
+          })
+
+        allRoute.push(route)
         return geojson
       })
       let pathGuideItems = await Promise.all(pathGuideItemsPromise)
@@ -288,7 +319,8 @@
 
       let facilitiesRoute = await getfacilitiesRoute(facilityPathList)
       // return L.featureGroup([...facilities, ...pathGuideItems, ...facilitiesRoute])
-      return await Promise.resolve(L.featureGroup([...pathGuideItems]))
+      // return await Promise.resolve(L.featureGroup([...pathGuideItems]))
+      return await Promise.resolve(allRoute)
     } catch (error) {
       ElMessage({
         showClose: true,
@@ -303,7 +335,7 @@
     return L.geoJSON(features, {
       pointToLayer: (feature, latLng) => {
         let latlng = [latLng.lat, latLng.lng].reverse()
-        return L.marker(latlng, { icon: greenIcon }).bindPopup(`
+        return L.marker(latlng, { icon: greenIcon, title: "门店" }).bindPopup(`
   <div class="shop">
   <p>店名：${feature.properties.NAME}</p>
   <p>品类：${feature.properties.CATEGORY}</p>
@@ -341,9 +373,9 @@
     MyCustomMap.editableLayers.addTo(props.map)
   }
 
-  // onUnmounted(() => {
-  //   clearAllLayer()
-  // })
+  onUnmounted(() => {
+    clearAllLayer()
+  })
 </script>
 
 <style lang="less" scoped>

@@ -17,6 +17,11 @@ export default defineConfig({
     Components({
       resolvers: [ElementPlusResolver()],
     }),
+
+    "@supermap/babel-plugin-import",
+    {
+      "libraryName": "@supermap/iclient-leaflet",
+    },
   ],
   define: {
     "process.env": {},

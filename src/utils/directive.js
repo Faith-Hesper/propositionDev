@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-10 18:34
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-20 22:20
+ * @LastEditTime: 2022-07-21 20:46
  * @Description:
  */
 
@@ -15,7 +15,7 @@ function dragEvent(el, binding) {
     // if(dialogHeaderEl)
     // console.log(dialogHeaderEl)
     const dragDom = el.querySelector(".dialog_content")
-    if (!dragDom) return
+    // if (!dragDom) return
     dialogHeaderEl.style.cssText += ";cursor:move;"
     // dragDom.style.cssText += ';bottom:0px;'
 

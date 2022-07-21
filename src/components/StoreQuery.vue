@@ -155,7 +155,9 @@
     MyCustomMap.aimMarkerLayer = resultLayer
     formShow.value = true
     let markerLayerBind = L.marker(resultLayer._latlng, { icon: greenIcon })
-      .bindPopup("起始点")
+      .bindPopup("起始点", {
+        className: "custom",
+      })
       .openPopup()
     MyCustomMap.editableLayers.addLayer(markerLayerBind)
   }

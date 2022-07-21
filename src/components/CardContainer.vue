@@ -1,21 +1,23 @@
 <template>
-  <div class="draggable" v-dialogDrag:[draggable]="true">
+  <div class="draggable">
     <transition name="slide-fade">
       <div v-if="status" class="card-show">
         <el-button @click=";(status = false), (draggable = true)">
           <slot name="icon"></slot>
         </el-button>
       </div>
-      <div v-else class="dialog_content card-hidden">
-        <el-card :body-style="{ padding: 0 }">
-          <div class="header dialog_header">
-            <div class="title">{{ props.title }}</div>
-            <el-button size="small" type="primary" @click=";(status = true), (draggable = false)"
-              >隐藏</el-button
-            >
-          </div>
-          <slot name="content"></slot>
-        </el-card>
+      <div v-else v-dialogDrag:[draggable]="true" class="card-hidden">
+        <div class="dialog_content">
+          <el-card :body-style="{ padding: 0 }">
+            <div class="header dialog_header">
+              <div class="title">{{ props.title }}</div>
+              <el-button size="small" type="primary" @click=";(status = true), (draggable = false)"
+                >隐藏</el-button
+              >
+            </div>
+            <slot name="content"></slot>
+          </el-card>
+        </div>
       </div>
     </transition>
   </div>

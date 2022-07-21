@@ -3,9 +3,12 @@ import App from "./App.vue"
 import router from "@/router"
 import "leaflet/dist/leaflet.css"
 import "./assets/css/common.css"
+import "./assets/css/map.css"
 import "leaflet-draw/dist/leaflet.draw.css"
 import "./config"
 import Directives from "@/utils/directive"
+import L from "leaflet"
+import "@supermap/iclient-leaflet"
 
 const app = createApp(App)
 

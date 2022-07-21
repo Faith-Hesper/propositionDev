@@ -2,11 +2,11 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-20 21:21
+ * @LastEditTime: 2022-07-21 21:24
  * @Description:
  */
 
-import { SuperMap, tiandituTileLayer } from "@supermap/iclient-leaflet"
+// import { SuperMap, tiandituTileLayer } from "@supermap/iclient-leaflet"
 import initIcon from "@/assets/images/init.png"
 import market from "@/assets/images/bag-heart-fill.svg"
 import icon1 from "@/assets/images/icon1.png"
@@ -16,7 +16,7 @@ import icon2 from "@/assets/images/icon2.png"
 // leaflet-draw 1.0.4 绘制rectangle bug
 window.type = true
 
-let CustomIcon = L.Icon.extend({
+let CustomIcon1 = L.Icon.extend({
   options: {
     iconUrl: initIcon,
     iconSize: [30, 41], // size of the icon
@@ -27,13 +27,13 @@ let CustomIcon = L.Icon.extend({
   },
 })
 
-let greenIcon = new CustomIcon({
+let greenIcon = new CustomIcon1({
   iconUrl: market,
 })
-let eventIcon = new CustomIcon({
+let eventIcon = new CustomIcon1({
   iconUrl: icon1,
 })
-let aimIcon = new CustomIcon({
+let aimIcon = new CustomIcon1({
   iconUrl: icon2,
 })
 
@@ -350,7 +350,7 @@ async function closestFacilitiesAnalyst({ eventPoint, facilityPonit, facilityNum
 
 export default mapObject
 export {
-  CustomIcon,
+  CustomIcon1,
   greenIcon,
   eventIcon,
   aimIcon,

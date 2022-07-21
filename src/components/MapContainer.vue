@@ -4,7 +4,7 @@
 
 <script setup>
   import { reactive, onMounted, shallowReactive } from "vue"
-  import { SuperMap, tiandituTileLayer } from "@supermap/iclient-leaflet"
+  // import { SuperMap, tiandituTileLayer } from "@supermap/iclient-leaflet"
 
   const MyCustomMap = shallowReactive({
     map: null,
