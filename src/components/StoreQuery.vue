@@ -47,15 +47,12 @@
 <script setup>
   import Draw from "@/components/Draw"
   import ShopForm from "@/components/ShopForm"
-  import {
-    greenIcon,
-    searchByBounds,
-    searchByGeometry,
-    bufferAnalyst,
-    serviceAreaAnalyst,
-    closestFacilitiesAnalyst,
-  } from "@/utils/map.js"
-  import { nextTick, reactive, ref, shallowReactive } from "vue"
+  import { greenIcon, searchByBounds, searchByGeometry, bufferAnalyst } from "@/utils/map.js"
+  import { getBufferInnerShop } from "@/utils/analyst.js"
+  import { walkIcon, pointIcon, marketIcon, startIcon } from "@/utils/Icon.js"
+  import { arrFeatureToGeoJson, debounce } from "@/utils/tool.js"
+
+  import { watch, reactive, ref, shallowReactive } from "vue"
   const props = defineProps({ map: { type: Object, default: () => null } })
   const emits = defineEmits(["listLoading", "shopData"])
   const formShow = ref(false)
@@ -90,10 +87,9 @@
     shopNum: [{ validator: checkNum, trigger: "change" }],
   })
   const reset = () => {
-    // if()
-    // form = null
-    console.log(form)
-    form.deleteProperty()
+    form.name = ""
+    form.range = 3
+    form.shopNum = 10
   }
   const queryBtn = [
     {
@@ -154,7 +150,7 @@
     MyCustomMap.aimMarkerLayer = null
     MyCustomMap.aimMarkerLayer = resultLayer
     formShow.value = true
-    let markerLayerBind = L.marker(resultLayer._latlng, { icon: greenIcon })
+    let markerLayerBind = resultLayer
       .bindPopup("起始点", {
         className: "custom",
       })
@@ -173,8 +169,48 @@
     MyCustomMap.editableLayers.addLayer(bufferLayerBind)
 
     // 范围内门店图层和坐标数组
-    let [geometryLayer, latlngArray, fitResultLayer] = await getBufferShop(bufferLayer)
-    formatShopData(fitResultLayer)
+    let { latlngArray, fitResultLayerArr } = await getBufferInnerShop(
+      bufferLayer,
+      form.name,
+      form.range,
+      form.shopNum
+    ).catch(err => {
+      props.map.flyTo([30.67, 104.07], 12)
+      throw new Error(err)
+    })
+    bindBufferShop(fitResultLayerArr)
+  }
+
+  // 绑定缓冲区图层
+  const bindBuffer = async range => {
+    // MyCustomMap.editableLayers
+
+    // 缓冲区图层
+    let bufferLayer = await bufferAnalyst({
+      geometry: MyCustomMap.aimMarkerLayer,
+      distance: range,
+    })
+    let bufferLayerBind = L.geoJSON(bufferLayer)
+      .bindPopup("三公里", { autoClose: false, closeOnClick: false })
+      .openPopup()
+    props.map.fitBounds(bufferLayerBind.getBounds())
+    MyCustomMap.editableLayers.addLayer(bufferLayerBind)
+    return await Promise.resolve(bufferLayerBind)
+  }
+
+  // 绑定范围内门店图层 marker
+  const bindBufferShop = fitResultLayerArr => {
+    // MyCustomMap.editableLayers.clearLayers()
+
+    emits("listLoading", true)
+
+    formatShopData(fitResultLayerArr)
+    // console.log(latlngArray, fitResultLayerArr)
+    let fitResultLayer = arrFeatureToGeoJson(fitResultLayerArr)
+    // console.log(fitResultLayer)
+    let fitResultLayerBind = geoJsonBind(fitResultLayer)
+
+    MyCustomMap.editableLayers.addLayer(fitResultLayerBind)
   }
 
   const geoJsonBind = features => {
@@ -191,67 +227,6 @@
     })
   }
 
-  // 获取缓冲区内的门店
-  const getBufferShop = async bufferLayer => {
-    try {
-      // 缓冲区内的商店
-      let geometryLayer = await searchByGeometry({ geometry: bufferLayer, count: form.shopNum })
-      if (geometryLayer.features.length === 0) {
-        Promise.reject(
-          `对不起，您周围${form.range}公里范围内未搜索到商店,请扩大搜索范围或更换目标点`
-        )
-      }
-
-      // console.log(geometryLayer)
-      // 商店坐标
-      let { latlngArray, fitResultLayer } = await getServiceArea(geometryLayer)
-      if (latlngArray) {
-        ElMessage({
-          showClose: true,
-          message: `已查询到${latlngArray.length}个商店`,
-          type: "success",
-        })
-      }
-
-      return await Promise.all([geometryLayer, latlngArray, fitResultLayer])
-    } catch (error) {
-      ElMessage({
-        showClose: true,
-        message: `${error}`,
-        type: "warning",
-      })
-      return error
-      // console.log(error)
-    }
-  }
-
-  // 获取服务站点坐标 array 数据
-  const getServiceArea = async serviceArea => {
-    return await new Promise((resolve, reject) => {
-      let latlngArray = []
-      let fitResultLayer = serviceArea.features.filter(feature => {
-        // console.log(feature)
-        // 筛选符合搜索名称的商店
-
-        if (form.name) {
-          if (feature.properties.NAME.indexOf(form.name) != -1) {
-            latlngArray.push(L.latLng(feature.geometry.coordinates.reverse()))
-            return true
-          }
-        } else {
-          latlngArray.push(L.latLng(feature.geometry.coordinates.reverse()))
-          return true
-        }
-      })
-
-      // console.log(latlngArray)
-      if (latlngArray.length === 0) {
-        reject("未查询到该商店,请重新输入商店名称")
-      }
-      resolve({ latlngArray, fitResultLayer })
-    })
-  }
-
   const formatShopData = async features => {
     let data = await Promise.resolve(
       features.map(feature => {
@@ -260,6 +235,30 @@
     )
     emits("shopData", data)
   }
+
+  watch(
+    () => form.range,
+    debounce(async function (newRange) {
+      if (newRange < 0 || !newRange) return
+      let bufferLayer = await bindBuffer(newRange)
+      // MyCustomMap.editableLayers.addLayer(bufferLayer)
+      setTimeout(async () => {
+        let { latlngArray, fitResultLayerArr } = await getBufferInnerShop(
+          bufferLayer,
+          form.name,
+          newRange,
+          form.shopNum
+        ).catch(err => {
+          props.map.flyTo([30.67, 104.07], 12)
+          throw new Error(err)
+        })
+        statusFitShop.value = true
+        bindBufferShop(fitResultLayerArr)
+        fitResult.latlngArray = latlngArray
+        fitResult.fitResultLayerArr = fitResultLayerArr
+      }, 500)
+    }, 800)
+  )
 </script>
 
 <style lang="less" scoped>

@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-23 14:40
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-23 16:51
+ * @LastEditTime: 2022-07-24 21:38
  * @Description:
  */
 L.AnimatedMarker = L.Marker.extend({
@@ -55,8 +55,8 @@ L.AnimatedMarker = L.Marker.extend({
         img.src = iconOption.iconUrl
         img.width = iconOption.iconSize[0]
         img.height = iconOption.iconSize[1]
-        img.style.marginLeft = iconOption.iconAnchor[0] + "px"
-        img.style.marginTop = iconOption.iconAnchor[1] + "px"
+        // img.style.marginLeft = iconOption.iconAnchor[0] + "px"
+        // img.style.marginTop = iconOption.iconAnchor[1] + "px"
         v.div.appendChild(img)
         outerDiv.appendChild(v.div)
         return outerDiv

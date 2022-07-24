@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-16 21:33
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-24 14:12
+ * @LastEditTime: 2022-07-24 21:30
  * @Description:
  */
 
@@ -10,10 +10,10 @@ import { aimIcon, searchByGeometry } from "@/utils/map.js"
 import { walkIcon, pointIcon, marketIcon, startIcon } from "@/utils/Icon.js"
 
 // 获取缓冲区内的门店 marker latlng
-const getBufferInnerShop = async (bufferLayer, name, range) => {
+const getBufferInnerShop = async (bufferLayer, name, range, count = 145) => {
   try {
     // 缓冲区内的商店 原始
-    let geometryLayer = await searchByGeometry({ geometry: bufferLayer, count: 145 })
+    let geometryLayer = await searchByGeometry({ geometry: bufferLayer, count: count })
     if (geometryLayer.features.length === 0) {
       let error = `对不起，您周围${range}公里范围内未搜索到商店,请扩大搜索范围或更换目标点`
       throw new Error(error)
@@ -114,22 +114,25 @@ const getRouteGuide = async (facilityPathList, map, aimLatLng) => {
     let route = [],
       index = 0,
       routeLatLngs = []
-    L.geoJSON(facilityPath.pathGuideItems, {
-      onEachFeature: (feature, layer) => {
-        console.log(feature, layer)
+    console.log(facilityPath)
+    facilityPath.pathGuideItems.features.map(feature => {
+      // 路线指引描述
+      route.push({
+        distance: feature.properties.distance,
+        length: feature.properties.length,
+        description: feature.properties.description,
+      })
+    })
 
-        // 路线指引描述
-        route.push({
-          distance: feature.properties.distance,
-          length: feature.properties.length,
-          description: feature.properties.description,
-        })
-      },
+    L.geoJSON(facilityPath.pathGuideItems, {
       pointToLayer: (point, latlng) => {
-        routeLatLngs.push(latlng)
         index++
         // 引用类型
-        // if (index === 1 || (aimLatLng.lat === latlng.lat && aimLatLng.lng === latlng.lng)) return
+        if (index === 1 || (aimLatLng.lat === latlng.lat && aimLatLng.lng === latlng.lng)) {
+          // 首尾坐标
+          routeLatLngs.push(latlng)
+          return
+        }
         // console.log(point)
         return L.marker(latlng, { icon: pointIcon })
       },
@@ -143,6 +146,7 @@ const getRouteGuide = async (facilityPathList, map, aimLatLng) => {
       })
       .addTo(map)
     // console.log(routeLatLngs)
+
     return { routeGuide: route, latlngs: routeLatLngs }
   })
   return await Promise.all(promiseRoute)

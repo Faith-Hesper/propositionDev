@@ -83,7 +83,6 @@
     control: null,
     editableLayers: null,
     loading: false,
-    aimMarkerLayer: null,
   })
   const layers = shallowReactive({
     aimMarker: null,
@@ -162,8 +161,8 @@
         // layers.aimMarker.remove()
       }
       // clearLayer()
-      MyCustomMap.aimMarkerLayer = null
-      MyCustomMap.aimMarkerLayer = resultLayer
+      layers.aimMarker = null
+      // MyCustomMap.aimMarker = resultLayer
       form.range = 3
       formShow.value = true
 
@@ -197,7 +196,7 @@
     // clearLayer()
     layers.bufferRegion.clearLayers()
     // layers.regionMarkers.clearLayers()
-    if (!MyCustomMap.aimMarkerLayer) {
+    if (!layers.aimMarker) {
       ElMessage({
         showClose: true,
         message: `请先选择配送点`,
@@ -251,7 +250,7 @@
 
     // 缓冲区图层
     let bufferLayer = await bufferAnalyst({
-      geometry: MyCustomMap.aimMarkerLayer,
+      geometry: layers.aimMarker,
       distance: range,
     })
     let bufferLayerBind = L.geoJSON(bufferLayer)
@@ -283,14 +282,18 @@
   const diliveryRouteAnalyst = async serviceAreaLatlng => {
     // 最近设施分析
     let facilityPathList = await closestFacilitiesAnalyst({
-      eventPoint: MyCustomMap.aimMarkerLayer._latlng,
+      eventPoint: layers.aimMarker.getLatLng(),
       facilityPonit: serviceAreaLatlng,
       facilityNum: 1,
     })
     // console.log(serviceAreaLatlng)
     let [route, guide] = await getDeliveryRoute(facilityPathList)
-    console.log(route, guide)
+
+    route[0].unshift(guide[0].latlngs[0])
+    route[0].push(guide[0].latlngs[1])
     // let ant = antPath([guide[0].latlngs])
+    // console.log(layers.aimMarker)
+    console.log(route, guide)
 
     // MyCustomMap.editableLayers.addLayer(ant)
     // console.log(route)
@@ -298,7 +301,7 @@
     // let ant = antPath(route, options)
     // props.map.addLayer(ant)
     // console.log(routeLine)
-    layers.animateMarker = L.animatedMarker(guide[0].latlngs, {
+    layers.animateMarker = L.animatedMarker(route[0], {
       icon: walkIcon,
       interval: 400,
       isPlay: true,
@@ -322,11 +325,7 @@
       // return await Promise.resolve(L.featureGroup([...pathGuideItems]))
       return await Promise.all([
         getfacilitiesRoute(facilityPathList, props.map),
-        getRouteGuide(
-          facilityPathList,
-          MyCustomMap.editableLayers,
-          MyCustomMap.aimMarkerLayer.getLatLng()
-        ),
+        getRouteGuide(facilityPathList, MyCustomMap.editableLayers, layers.aimMarker.getLatLng()),
       ])
       // return await Promise.resolve(allRoute)
     } catch (error) {
@@ -407,7 +406,7 @@
         let { latlngArray, fitResultLayerArr } = await getBufferInnerShop(
           bufferLayer,
           form.name,
-          form.range
+          newRange
         ).catch(err => {
           props.map.flyTo([30.67, 104.07], 12)
           throw new Error(err)

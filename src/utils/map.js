@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-21 21:24
+ * @LastEditTime: 2022-07-24 18:21
  * @Description:
  */
 
@@ -80,7 +80,7 @@ async function searchByBounds({ bounds, fromIndex = 0, toIndex = 19, count = 20 
             ElMessage({
               showClose: true,
               dangerouslyUseHTMLString: true,
-              message: `<p>对不起,您当前搜索的商店数量太多</p><p>当前一共为您找到${serviceResult.result.featureCount}家商店</p><p>实际周围一共有${serviceResult.result.totalCount}家商店</p>`,
+              message: `<p>当前一共为您找到${serviceResult.result.featureCount}家商店</p><p>实际周围一共有${serviceResult.result.totalCount}家商店</p>`,
               type: "warning",
             })
           }
@@ -123,7 +123,7 @@ async function searchByGeometry({ geometry, fromIndex = 0, toIndex = 19, count =
             ElMessage({
               showClose: true,
               dangerouslyUseHTMLString: true,
-              message: `<p>对不起,您当前搜索的商店数量太多</p><p>当前一共为您找到${serviceResult.result.featureCount}家商店</p><p>实际周围一共有${serviceResult.result.totalCount}家商店</p>`,
+              message: `当前一共为您找到${serviceResult.result.featureCount}家商店</p><p>实际周围一共有${serviceResult.result.totalCount}家商店</p>`,
               type: "warning",
             })
           }
@@ -304,7 +304,7 @@ async function serviceAreaAnalyst(latlng) {
 }
 
 // 最近设施服务分析
-async function closestFacilitiesAnalyst({ eventPoint, facilityPonit, facilityNum = 10 } = {}) {
+async function closestFacilitiesAnalyst({ eventPoint, facilityPonit, facilityNum = 1 } = {}) {
   let parameter = transportationAnalystParameter()
   // 最近设施服务参数
   let closestFacilitiesAnalystParameters = new L.supermap.FindClosestFacilitiesParameters({
