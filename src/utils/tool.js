@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-17 14:05
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-20 20:53
+ * @LastEditTime: 2022-07-24 08:29
  * @Description:
  */
 import { searchBySql } from "@/utils/map.js"
@@ -37,7 +37,7 @@ function cacheShopData() {
       fromIndex: sqlParam.fromIndex,
       toIndex: sqlParam.toIndex,
     })
-    console.log(totalCount)
+    // console.log(totalCount)
     if (sqlParam.toIndex + 1 < totalCount) {
       sqlParam.fromIndex = sqlParam.toIndex + 1
       sqlParam.toIndex += 19
@@ -57,7 +57,7 @@ function cacheShopData() {
       resolve("")
     })
     if (sqlParam.toIndex + 1 > totalCount) {
-      console.log("完成")
+      console.log("缓存完成")
       let geofeatures = { features: shopFeatures, type: "FeatureCollection" }
       localStorage.setItem("shops", JSON.stringify(Shops))
       localStorage.setItem("shopsFeatures", JSON.stringify(geofeatures))
@@ -70,4 +70,28 @@ function cacheShopData() {
   })
 }
 
-export { arrFeatureToGeoJson, randomColor, cacheShopData }
+// 节流
+function throttle(fn, delay = 200) {
+  let timer = null
+  return function () {
+    if (timer) retrun
+    timer = setTimeout(() => {
+      fn.apply(this, arguments)
+      timer = null
+    }, delay)
+  }
+}
+
+// 防抖
+function debounce(fn, wait = 200) {
+  let timer = null
+  return function () {
+    const context = this
+    const args = arguments
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      fn.apply(context, args)
+    }, wait)
+  }
+}
+export { arrFeatureToGeoJson, randomColor, cacheShopData, throttle, debounce }

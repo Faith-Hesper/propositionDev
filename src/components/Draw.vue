@@ -139,7 +139,7 @@
     display: flex;
     width: 100%;
     height: 100%;
-    justify-content: space-around;
+    justify-content: end;
     align-content: space-around;
     flex-wrap: wrap;
     right: 0;

@@ -3,7 +3,6 @@
     <div class="analystbtn">
       <!-- <div class="title">查询范围内商店</div> -->
       <el-button @click="showSearviceRegion">展示服务范围</el-button>
-      <el-button @click="showHotMap">隐藏</el-button>
     </div>
   </div>
 </template>
@@ -21,12 +20,13 @@
     fromIndex: 0,
     toIndex: 20,
   }
+  const featuresArr = ref()
   let Myfeatures = []
 
   serviceObject.serviceLayer = L.featureGroup().addTo(props.map)
 
   const showSearviceRegion = async () => {
-    if (!featuresArr) {
+    if (!featuresArr.value) {
       cacheShopData()
       let featuresData = localStorage.getItem("shopsFeatures")
       let geoFeature = JSON.parse(featuresData)
@@ -89,43 +89,18 @@
     })
   }
 
-  const showHotMap = async () => {
-    if (!featuresArr) {
-      // let { totalCount, features } = await searchBySql("", {
-      //   fromIndex: 0,
-      //   toIndex: 155,
-      // })
-      // console.log("获取数据")
-      // Myfeatures.push(features)
-      cacheShopData()
-      let featuresData = localStorage.getItem("shopsFeatures")
-      let geoFeature = JSON.parse(featuresData)
-      Myfeatures = []
+  onMounted(() => {
+    featuresArr.value = localStorage.getItem("shopsFeatures")
+    if (featuresArr.value) {
+      let geoFeature = JSON.parse(featuresArr.value)
       Myfeatures.push(geoFeature)
     }
-    let heatMapLayer = new L.supermap.HeatMapLayer("heatMap", {
-      id: "heatmap",
-      map: props.map,
-      radius: 50,
-      // featureWeight: 100,
-    })
-    console.log(Myfeatures)
-    let geojson = Myfeatures[0]
-    heatMapLayer.addFeatures(geojson)
-    heatMapLayer.addTo(props.map)
-    props.map.flyTo([30.67, 104.07], 12)
-  }
-
-  const featuresArr = localStorage.getItem("shopsFeatures")
-  if (featuresArr) {
-    let geoFeature = JSON.parse(featuresArr)
-    Myfeatures.push(geoFeature)
-  }
+  })
 </script>
 
 <style lang="less" scoped>
   .service-region {
-    width: 250px;
+    width: 150px;
     .title {
       width: 100%;
       font-size: 14px;

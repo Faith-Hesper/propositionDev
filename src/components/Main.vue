@@ -7,17 +7,15 @@
   import CardContainer from "@/components/CardContainer"
   import GoodsDilivery from "@/components/GoodsDilivery"
   import ServiceRegion from "@/components/ServiceRegion"
+  import HotLayer from "@/components/HotLayer"
   import {
-    // CustomIcon,
-    greenIcon,
-    eventIcon,
-    aimIcon,
     searchByBounds,
     searchByGeometry,
     bufferAnalyst,
     serviceAreaAnalyst,
     closestFacilitiesAnalyst,
   } from "@/utils/map.js"
+  import { walkIcon, pointIcon, marketIcon } from "@/utils/Icon.js"
   import { nextTick, onMounted, reactive, ref, shallowReactive } from "vue"
 
   const fullscreenLoading = ref(false)
@@ -48,10 +46,10 @@
     editableLayers: null,
     listLoading: false,
     shopData: [],
-    StoreQueryStatus: false,
   })
-
   MyCustomMap.editableLayers = L.featureGroup()
+  const hotLayer = L.featureGroup()
+  MyCustomMap.editableLayers
 
   // 添加图层切换控件
   const mapInit = mapObject => {
@@ -96,12 +94,14 @@
 
   // 框选查询
   const rectangleLayer = async resultLayer => {
-    console.log(MyCustomMap.editableLayers._layers)
+    // console.log(MyCustomMap.editableLayers._layers)
     fullscreenLoading.value = true
     MyCustomMap.editableLayers.clearLayers()
     MyCustomMap.editableLayers.addLayer(resultLayer).addTo(MyCustomMap.map)
     // console.log(resultLayer._bounds)
-    let features = await searchByBounds(resultLayer._bounds)
+    let { features } = await searchByBounds({ bounds: resultLayer._bounds })
+    if (features.length === 0) return
+    formatShopData(features)
     let layer = geoJsonBind(features)
     MyCustomMap.editableLayers.addLayer(layer)
     fullscreenLoading.value = false
@@ -113,56 +113,25 @@
     MyCustomMap.editableLayers.clearLayers()
     MyCustomMap.editableLayers.addLayer(resultLayer).addTo(MyCustomMap.map)
     // console.log(resultLayer)
-    let features = await searchByGeometry(L.polygon(resultLayer._latlngs))
+    let { features } = await searchByGeometry({ geometry: L.polygon(resultLayer._latlngs) })
+    if (features.length === 0) return
+    // console.log(features)
+    formatShopData(features)
     let layer = geoJsonBind(features)
     MyCustomMap.editableLayers.addLayer(layer)
     fullscreenLoading.value = false
   }
 
   //
-  const markerLayer = async resultLayer => {
-    fullscreenLoading.value = true
+  const markerLayer = resultLayer => {
     MyCustomMap.editableLayers.clearLayers()
-    // 3公里范围缓冲区
-    let bufferLayer = await bufferAnalyst(resultLayer)
-    let buffer = L.geoJSON(bufferLayer)
-
-    // 缓冲区内的商店
-    let geometryLayer = await searchByGeometry(bufferLayer)
-    let markerLayer = geoJsonBind(geometryLayer)
-
-    // 商店坐标
-    let serviceAreaLatlng = getServiceArea(geometryLayer)
-
-    console.log(serviceAreaLatlng)
-    let featureGroup = L.featureGroup([buffer, markerLayer])
-    // console.log(resultLayer)
-
-    // 服务区分析
-    let serviceAreaList = await serviceAreaAnalyst(serviceAreaLatlng)
-    let serviceRegion = serviceAreaList.map(serviceArea => {
-      return serviceArea.serviceRegion
-    })
-    let routes = serviceAreaList.map(serviceArea => {
-      return serviceArea.routes
-    })
-
-    // 最近设施分析
-    let facilityPathList = await closestFacilitiesAnalyst(resultLayer._latlng, serviceAreaLatlng)
-    let facilitiesLayer = getDeliveryRoute(facilityPathList)
-    // console.log(facilities)
-    MyCustomMap.editableLayers.addLayer(facilitiesLayer).addTo(MyCustomMap.map)
-    // MyCustomMap.editableLayers.addLayer(L.featureGroup(facilitiesRoute)).addTo(MyCustomMap.map)
-    MyCustomMap.editableLayers.addLayer(L.geoJSON(serviceRegion)).addTo(MyCustomMap.map)
-    MyCustomMap.editableLayers.addLayer(L.geoJSON(routes)).addTo(MyCustomMap.map)
-    // MyCustomMap.editableLayers.addLayer(featureGroup).addTo(MyCustomMap.map)
-    fullscreenLoading.value = false
+    MyCustomMap.editableLayers.addLayer(resultLayer)
   }
 
   const geoJsonBind = features => {
     return L.geoJSON(features, {
       pointToLayer: function (feature, latlng) {
-        return L.marker(latlng, { icon: greenIcon }).bindPopup(`
+        return L.marker(latlng, { icon: marketIcon }).bindPopup(`
   <div class="shop">
   <p>店名：${feature.properties.NAME}</p>
   <p>品类：${feature.properties.CATEGORY}</p>
@@ -218,9 +187,9 @@
   }
 
   const formatShopData = async features => {
-    console.log(features)
+    // console.log(features)
     MyCustomMap.shopData = await Promise.resolve(
-      features.features.map(feature => {
+      features.map(feature => {
         return { ...feature.properties }
       })
     )
@@ -231,6 +200,9 @@
     MyCustomMap.map.flyTo(row, 14)
   }
 
+  const clearAll = () => {
+    MyCustomMap.editableLayers.clearLayers()
+  }
   onMounted(() => {
     // map = await mapObject('map')
     // let control = mapControl(map)
@@ -290,6 +262,11 @@
             <GoodsDilivery
               v-if="MyCustomMap.map"
               @shopData="showShopList"
+              @listLoading="
+                status => {
+                  listLoading = status
+                }
+              "
               :map="MyCustomMap.map"
             ></GoodsDilivery>
           </template>
@@ -305,6 +282,12 @@
           @markerLayer="markerLayer"
         ></Draw>
       </div>
+      <div class="clearbar">
+        <el-button plain size="small" @click="clearAll">清除图层</el-button>
+      </div>
+      <div class="hotLayerbar">
+        <HotLayer v-if="MyCustomMap.map" :map="MyCustomMap.map"></HotLayer>
+      </div>
       <div class="serviceareabar">
         <ServiceRegion v-if="MyCustomMap.map" :map="MyCustomMap.map"></ServiceRegion>
       </div>
@@ -319,7 +302,10 @@
       style="position: absolute"
     >
     </MapContainer>
-    <div class="route"></div>
+    <div class="route">
+      <div>起点</div>
+      <div>终点</div>
+    </div>
   </div>
 </template>
 
@@ -351,6 +337,14 @@
         width: 50px;
       }
     }
+    .clearbar {
+      position: absolute;
+      top: 180px;
+      right: 0;
+      margin: 0 10px;
+      z-index: 5;
+      border-radius: 4px;
+    }
     .querybar {
       position: absolute;
       left: 0;
@@ -376,15 +370,22 @@
     .diliverybar {
       position: absolute;
       margin: 0 10px;
-      right: 300px;
+      right: 150px;
       top: 300px;
+      z-index: 5;
+    }
+    .hotLayerbar {
+      position: absolute;
+      margin: 0 10px;
+      right: 0;
+      top: 210px;
       z-index: 5;
     }
     .serviceareabar {
       position: absolute;
       margin: 0 10px;
-      right: 100px;
-      top: 200px;
+      right: 0px;
+      top: 250px;
       z-index: 5;
     }
   }

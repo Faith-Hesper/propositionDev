@@ -12,7 +12,7 @@
     <el-table-column prop="NAME" label="店名"></el-table-column>
     <el-table-column prop="ADNAME" label="区域"></el-table-column>
     <el-table-column prop="CATEGORY" label="商品"></el-table-column>
-    <el-table-column prop="PRICE" label="价格/kg"></el-table-column>
+    <el-table-column prop="PRICE" label="价格/kg" :formatter="formatterPrice"></el-table-column>
     <el-table-column label="操作">
       <template #default="scope">
         <el-tag class="point" type="success" @click="clickRow(scope.row)">定位</el-tag>
@@ -31,6 +31,9 @@
     let lng = row.LNG
     // console.log(row)
     emits("flyTOAim", [lat, lng])
+  }
+  const formatterPrice = row => {
+    return Number(row.PRICE).toFixed(2)
   }
 </script>
 

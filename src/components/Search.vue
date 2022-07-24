@@ -98,7 +98,8 @@
   if (!localStorage.getItem("shops") || time > 30 || !oldTime) {
     let timestamp = new Date().getTime()
     localStorage.setItem("timestamp", timestamp.toString())
-    cacheShopData()
+    setTimeout(cacheShopData(), 1000)
+
     // getShopsData("").then(() => {
     //   localStorage.setItem("shops", JSON.stringify(Shops.value))
     // })

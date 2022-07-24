@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-21 20:10
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-21 21:31
+ * @LastEditTime: 2022-07-23 16:55
  * @Description:
  */
 
@@ -57,17 +57,23 @@ let endIcon = new CustomIcon({
 let endIcon2 = new CustomIcon({
   iconUrl: endPoint2,
 })
-let marketIcon = new CustomIcon({
+let marketIcon = L.icon({
   iconUrl: superMarket,
+  iconAnchor: [20, 20],
+  popupAnchor: [0, -15],
 })
 let pointIcon = new CustomIcon({
   iconUrl: point,
 })
 let walkIcon = new CustomIcon({
   iconUrl: walk,
+  iconSize: [38, 95],
+  iconAnchor: [-45, -40],
 })
 
-export default CustomIcon
+export default {
+  CustomIcon,
+}
 
 export {
   greenIcon,

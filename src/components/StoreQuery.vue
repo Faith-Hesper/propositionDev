@@ -283,6 +283,7 @@
       align-content: space-around;
       .draw-btn {
         flex-direction: row;
+        justify-content: space-around;
         .el-button {
           width: 20px;
         }
