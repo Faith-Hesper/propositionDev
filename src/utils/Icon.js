@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-21 20:10
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-23 16:55
+ * @LastEditTime: 2022-07-25 20:55
  * @Description:
  */
 
@@ -67,8 +67,7 @@ let pointIcon = new CustomIcon({
 })
 let walkIcon = new CustomIcon({
   iconUrl: walk,
-  iconSize: [38, 95],
-  iconAnchor: [-45, -40],
+  iconSize: [65, 65],
 })
 
 export default {

@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-16 21:33
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-24 21:30
+ * @LastEditTime: 2022-07-24 22:00
  * @Description:
  */
 
@@ -88,7 +88,7 @@ const getfacilitiesPoint = async facilityPathList => {
 }
 
 // 获取路线 主干线路
-const getfacilitiesRoute = async (facilityPathList, map) => {
+const getfacilitiesRoute = async facilityPathList => {
   return await new Promise((resolve, reject) => {
     // 路线
     let facilitiesRoute = facilityPathList.map(facilityPath => {
@@ -111,20 +111,19 @@ const getfacilitiesRoute = async (facilityPathList, map) => {
 // 路线指引
 const getRouteGuide = async (facilityPathList, map, aimLatLng) => {
   let promiseRoute = facilityPathList.map(facilityPath => {
-    let route = [],
-      index = 0,
+    let index = 0,
       routeLatLngs = []
-    console.log(facilityPath)
-    facilityPath.pathGuideItems.features.map(feature => {
+
+    let route = facilityPath.pathGuideItems.features.map(feature => {
       // 路线指引描述
-      route.push({
+      return {
         distance: feature.properties.distance,
         length: feature.properties.length,
         description: feature.properties.description,
-      })
+      }
     })
 
-    L.geoJSON(facilityPath.pathGuideItems, {
+    let guideLayer = L.geoJSON(facilityPath.pathGuideItems, {
       pointToLayer: (point, latlng) => {
         index++
         // 引用类型
@@ -147,7 +146,7 @@ const getRouteGuide = async (facilityPathList, map, aimLatLng) => {
       .addTo(map)
     // console.log(routeLatLngs)
 
-    return { routeGuide: route, latlngs: routeLatLngs }
+    return { routeGuide: route, latlngs: routeLatLngs, guideLayer: guideLayer }
   })
   return await Promise.all(promiseRoute)
 }

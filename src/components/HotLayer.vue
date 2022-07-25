@@ -10,7 +10,7 @@
   import { cacheShopData, debounce } from "@/utils/tool.js"
 
   const props = defineProps({ map: { type: Object, default: () => null } })
-  let check = ref(false)
+  const check = ref(false)
   const featuresArr = ref()
   const heatMapLayer = ref(null)
   let Myfeatures = []

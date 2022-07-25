@@ -245,7 +245,7 @@
           </template>
           <template v-slot:content>
             <ShopForm
-              v-loading="listLoading"
+              :v-loading="listLoading"
               element-loading-text="列表数据加载中"
               @flyTOAim="flyTOAim"
               :shopList="MyCustomMap.shopData"

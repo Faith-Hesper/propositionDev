@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-23 14:40
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-24 21:38
+ * @LastEditTime: 2022-07-25 20:07
  * @Description:
  */
 L.AnimatedMarker = L.Marker.extend({
@@ -16,7 +16,7 @@ L.AnimatedMarker = L.Marker.extend({
     // animate on add?
     autoStart: false,
     isPlay: false,
-    loop: true,
+    loop: false,
     playCall: null,
   },
 
@@ -37,6 +37,8 @@ L.AnimatedMarker = L.Marker.extend({
         var outerDiv = document.createElement("div")
         outerDiv.style.width = iconOption.iconSize[0] + "px"
         outerDiv.style.height = iconOption.iconSize[1] + "px"
+        outerDiv.style.marginTop = -iconOption.iconSize[0] + "px"
+        outerDiv.style.marginLeft = -iconOption.iconSize[1] / 2 + "px"
         outerDiv.style.position = "absolute"
         v.div = document.createElement("div")
         v.div.style.width = iconOption.iconSize[0] + "px"
@@ -55,8 +57,6 @@ L.AnimatedMarker = L.Marker.extend({
         img.src = iconOption.iconUrl
         img.width = iconOption.iconSize[0]
         img.height = iconOption.iconSize[1]
-        // img.style.marginLeft = iconOption.iconAnchor[0] + "px"
-        // img.style.marginTop = iconOption.iconAnchor[1] + "px"
         v.div.appendChild(img)
         outerDiv.appendChild(v.div)
         return outerDiv

@@ -1,6 +1,6 @@
 <template>
   <div class="dilivery">
-    <div v-if="formShow" class="main-args">
+    <div v-if="formShow" class="main-args" :v-loading="loading" element-loading-text="数据加载中">
       <div class="title">查询{{ form.range }}公里范围内最近{{ form.name }}门店</div>
       <div class="form">
         <el-form ref="formRef" size="small" :rules="rules" :model="form">
@@ -57,7 +57,7 @@
   import { antPath } from "leaflet-ant-path"
   import {
     // greenIcon,
-    // eventIcon,
+    eventIcon,
     // aimIcon,
     searchByGeometry,
     bufferAnalyst,
@@ -78,11 +78,10 @@
   const emits = defineEmits(["listLoading", "shopData"])
   const formShow = ref(false)
   const statusFitShop = ref(false)
-  // const formRef = ref()
+  const loading = ref(false)
   const MyCustomMap = shallowReactive({
     control: null,
     editableLayers: null,
-    loading: false,
   })
   const layers = shallowReactive({
     aimMarker: null,
@@ -138,20 +137,34 @@
   ]
 
   MyCustomMap.editableLayers = L.featureGroup().addTo(props.map)
-  layers.regionMarkers = L.featureGroup()
-  layers.bufferRegion = L.featureGroup()
 
-  MyCustomMap.editableLayers
-    .on("mouseover", e => {
-      // console.log(e)
-      // e.target.popupopen()
-      e.layer.openPopup()
-    })
-    .on("mouseout", e => e.layer.closePopup())
+  layers.regionMarkers = L.featureGroup()
+    // .on("mouseover", e => {
+    //   e.layer.openPopup()
+    // })
+    // .on("mouseout", e => e.layer.closePopup())
     .on("click", e => {
       // console.log(e)
       e.layer.openPopup()
+      let latlng = e.sourceTarget.getLatLng()
+      document.querySelector(".pre").onclick = function () {
+        // console.log(latlng)
+        layers.bufferRegion.clearLayers()
+        diliveryRouteAnalyst([latlng])
+      }
     })
+    .on("popupopen", e => {
+      // console.log(e)
+      // let latlng = e.sourceTarget.getLatLng()
+      // document.querySelector(".pre").onclick = function () {
+      //   // console.log(latlng)
+      //   layers.bufferRegion.clearLayers()
+      //   diliveryRouteAnalyst([latlng])
+      // }
+    })
+
+  layers.bufferRegion = L.featureGroup()
+
   // .on("contextmenu", e => {})
 
   const markerLayer = async resultLayer => {
@@ -165,11 +178,19 @@
       // MyCustomMap.aimMarker = resultLayer
       form.range = 3
       formShow.value = true
+      loading.value = true
 
-      layers.aimMarker = resultLayer
+      const latlng = resultLayer.getLatLng()
+      layers.aimMarker = L.marker(latlng, { icon: eventIcon, draggable: true })
         .bindPopup("配送点")
         .openPopup()
         .addTo(MyCustomMap.editableLayers)
+        .on("mouseover", e => {
+          // e.layer.openPopup()
+        })
+        .on("mouseout", e => {
+          console.log(e)
+        })
 
       // 3公里范围缓冲区
       let bufferLayer = await bindBuffer()
@@ -185,6 +206,7 @@
         throw new Error(err)
       })
       bindBufferShop(fitResultLayerArr)
+
       fitResult.latlngArray = latlngArray
       fitResult.fitResultLayerArr = fitResultLayerArr
     } catch (error) {}
@@ -205,9 +227,9 @@
       return
     }
 
+    emits("listLoading", true)
     if (!statusFitShop.value || !fitResult.latlngArray || !fitResult.fitResultLayerArr) {
       let bufferLayer = await bindBuffer(form.range)
-      // emits("listLoading", true)
       let { geometryLayer, latlngArray, fitResultLayerArr } = await getBufferInnerShop(
         bufferLayer,
         name,
@@ -226,11 +248,6 @@
     // let [routelayer, guide] =
     // await diliveryRouteAnalyst(latlngArray)
 
-    layers.regionMarkers.on("popupopen", e => {
-      document.querySelector(".pre").onclick = () => {
-        console.log(e)
-      }
-    })
     // console.log(routelayer, guide)
     // routelayer.addTo(MyCustomMap.editableLayers)
   }
@@ -274,12 +291,19 @@
     // console.log(latlngArray, fitResultLayerArr)
     let fitResultLayer = arrFeatureToGeoJson(fitResultLayerArr)
     // console.log(fitResultLayer)
-    let fitResultLayerBind = geoJsonBind(fitResultLayer)
+    let fitResultLayerBind = geoJSONBind(fitResultLayer)
 
     layers.regionMarkers.addLayer(fitResultLayerBind).addTo(MyCustomMap.editableLayers)
+
+    loading.value = false
   }
 
   const diliveryRouteAnalyst = async serviceAreaLatlng => {
+    if (layers.animateMarker) {
+      layers.animateMarker.stop()
+      MyCustomMap.editableLayers.removeLayer(layers.animateMarker)
+    }
+
     // 最近设施分析
     let facilityPathList = await closestFacilitiesAnalyst({
       eventPoint: layers.aimMarker.getLatLng(),
@@ -294,7 +318,7 @@
     // let ant = antPath([guide[0].latlngs])
     // console.log(layers.aimMarker)
     console.log(route, guide)
-
+    props.map.fitBounds(guide[0].guideLayer.getBounds())
     // MyCustomMap.editableLayers.addLayer(ant)
     // console.log(route)
     // let routeLine = L.polyline(route[0]).addTo(props.map)
@@ -324,9 +348,9 @@
       // return L.featureGroup([...facilities, ...pathGuideItems, ...facilitiesRoute])
       // return await Promise.resolve(L.featureGroup([...pathGuideItems]))
       return await Promise.all([
-        getfacilitiesRoute(facilityPathList, props.map),
+        getfacilitiesRoute(facilityPathList),
         getRouteGuide(facilityPathList, MyCustomMap.editableLayers, layers.aimMarker.getLatLng()),
-      ])
+      ]).catch(err => Promise.reject(err))
       // return await Promise.resolve(allRoute)
     } catch (error) {
       ElMessage({
@@ -338,7 +362,7 @@
     }
   }
 
-  const geoJsonBind = features => {
+  const geoJSONBind = features => {
     return L.geoJSON(features, {
       pointToLayer: (feature, latLng) => {
         let latlng = [latLng.lat, latLng.lng].reverse()
@@ -352,8 +376,7 @@
             <p>价格：${Number(feature.properties.PRICE).toFixed(2)}元/kg</p>
           </div>
         <div class="footer">
-          <button class="pre">上一步</button>
-          <button>下一步</button>
+          <button class="pre">设为配送商店</button>
         </div>
         </div>
   `,
