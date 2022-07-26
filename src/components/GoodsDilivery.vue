@@ -1,9 +1,16 @@
 <template>
   <div class="dilivery">
-    <div v-if="formShow" class="main-args" :v-loading="loading" element-loading-text="数据加载中">
+    <div v-if="formShow" class="main-args">
       <div class="title">查询{{ form.range }}公里范围内最近{{ form.name }}门店</div>
       <div class="form">
-        <el-form ref="formRef" size="small" :rules="rules" :model="form">
+        <el-form
+          ref="formRef"
+          size="small"
+          :rules="rules"
+          :model="form"
+          v-loading="loading"
+          element-loading-text="数据加载中"
+        >
           <el-form-item label="商店名称">
             <el-input v-model.trim="form.name"></el-input>
           </el-form-item>
@@ -88,6 +95,7 @@
     bufferRegion: null,
     regionMarkers: null,
     animateMarker: null,
+    guideLayer: null,
   })
   const fitResult = reactive({
     geometryLayer: null,
@@ -149,6 +157,9 @@
       let latlng = e.sourceTarget.getLatLng()
       document.querySelector(".pre").onclick = function () {
         // console.log(latlng)
+        setTimeout(() => {
+          e.sourceTarget.closePopup()
+        }, 1000)
         layers.bufferRegion.clearLayers()
         diliveryRouteAnalyst([latlng])
       }
@@ -262,6 +273,7 @@
   const bindBuffer = async range => {
     if (MyCustomMap.editableLayers.hasLayer(layers.bufferRegion)) {
       MyCustomMap.editableLayers.removeLayer(layers.bufferRegion)
+      props.map.removeLayer(layers.bufferRegion)
     }
     layers.bufferRegion.clearLayers()
 
@@ -282,6 +294,7 @@
   const bindBufferShop = fitResultLayerArr => {
     if (MyCustomMap.editableLayers.hasLayer(layers.regionMarkers)) {
       MyCustomMap.editableLayers.removeLayer(layers.regionMarkers)
+      props.map.removeLayer(layers.regionMarkers)
     }
     layers.regionMarkers.clearLayers()
 
@@ -299,9 +312,12 @@
   }
 
   const diliveryRouteAnalyst = async serviceAreaLatlng => {
-    if (layers.animateMarker) {
+    if (layers.animateMarker && layers.guideLayer) {
       layers.animateMarker.stop()
       MyCustomMap.editableLayers.removeLayer(layers.animateMarker)
+      MyCustomMap.editableLayers.removeLayer(layers.guideLayer)
+      props.map.removeLayer(layers.animateMarker)
+      props.map.removeLayer(layers.guideLayer)
     }
 
     // 最近设施分析
@@ -318,7 +334,17 @@
     // let ant = antPath([guide[0].latlngs])
     // console.log(layers.aimMarker)
     console.log(route, guide)
-    props.map.fitBounds(guide[0].guideLayer.getBounds())
+
+    layers.guideLayer = guide[0].guideLayer
+
+    props.map.fitBounds(layers.guideLayer.getBounds())
+
+    layers.guideLayer
+      .bindPopup(layer => {
+        // console.log(layer)
+        return `${layer.feature.properties.description}`
+      })
+      .addTo(MyCustomMap.editableLayers)
     // MyCustomMap.editableLayers.addLayer(ant)
     // console.log(route)
     // let routeLine = L.polyline(route[0]).addTo(props.map)
@@ -349,7 +375,7 @@
       // return await Promise.resolve(L.featureGroup([...pathGuideItems]))
       return await Promise.all([
         getfacilitiesRoute(facilityPathList),
-        getRouteGuide(facilityPathList, MyCustomMap.editableLayers, layers.aimMarker.getLatLng()),
+        getRouteGuide(facilityPathList, layers.aimMarker.getLatLng()),
       ]).catch(err => Promise.reject(err))
       // return await Promise.resolve(allRoute)
     } catch (error) {

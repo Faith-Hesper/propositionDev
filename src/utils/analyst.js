@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-16 21:33
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-24 22:00
+ * @LastEditTime: 2022-07-26 20:14
  * @Description:
  */
 
@@ -109,7 +109,7 @@ const getfacilitiesRoute = async facilityPathList => {
 }
 
 // 路线指引
-const getRouteGuide = async (facilityPathList, map, aimLatLng) => {
+const getRouteGuide = async (facilityPathList, aimLatLng) => {
   let promiseRoute = facilityPathList.map(facilityPath => {
     let index = 0,
       routeLatLngs = []
@@ -139,11 +139,7 @@ const getRouteGuide = async (facilityPathList, map, aimLatLng) => {
         return { color: "#ffb676", weight: 8 }
       },
     })
-      .bindPopup(layer => {
-        // console.log(layer)
-        return `${layer.feature.properties.description}`
-      })
-      .addTo(map)
+
     // console.log(routeLatLngs)
 
     return { routeGuide: route, latlngs: routeLatLngs, guideLayer: guideLayer }

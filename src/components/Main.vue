@@ -44,7 +44,6 @@
     map: null,
     control: null,
     editableLayers: null,
-    listLoading: false,
     shopData: [],
   })
   MyCustomMap.editableLayers = L.featureGroup()
@@ -78,7 +77,8 @@
   const getShops = features => {
     fullscreenLoading.value = true
     MyCustomMap.editableLayers.clearLayers()
-    formatShopData(features)
+
+    formatShopData(features.features)
     let layers = geoJsonBind(features)
 
     MyCustomMap.map.flyTo(L.latLng(features.features[0].geometry.coordinates.reverse()), 14)
@@ -187,7 +187,7 @@
   }
 
   const formatShopData = async features => {
-    // console.log(features)
+    // console.log(features.features)
     MyCustomMap.shopData = await Promise.resolve(
       features.map(feature => {
         return { ...feature.properties }
@@ -200,8 +200,18 @@
     MyCustomMap.map.flyTo(row, 14)
   }
 
+  // 清除所有图层
   const clearAll = () => {
     MyCustomMap.editableLayers.clearLayers()
+    let layerIndex = 0
+    MyCustomMap.shopData = []
+    MyCustomMap.map.eachLayer(layer => {
+      layerIndex++
+      if (layerIndex >= 4) {
+        MyCustomMap.map.removeLayer(layer)
+      }
+      // console.log(layer)
+    })
   }
   onMounted(() => {
     // map = await mapObject('map')
@@ -245,7 +255,7 @@
           </template>
           <template v-slot:content>
             <ShopForm
-              :v-loading="listLoading"
+              v-loading="listLoading"
               element-loading-text="列表数据加载中"
               @flyTOAim="flyTOAim"
               :shopList="MyCustomMap.shopData"
@@ -296,7 +306,7 @@
       </div> -->
     </div>
     <MapContainer
-      v-loading.fullscreen.lock="!MyCustomMap.map"
+      v-loading.fullscreen.lock="!MyCustomMap.map || fullscreenLoading"
       element-loading-text="地图加载中"
       @map-created="mapInit"
       style="position: absolute"
