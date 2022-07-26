@@ -8,19 +8,22 @@
       @click="drawEvent(draw.type)"
       >{{ draw.name }}</el-button
     >
+    <div v-if="cancel" class="markertip">右键取消</div>
   </div>
 </template>
 
 <script setup>
   import "leaflet-draw"
   import "@/utils/L.draw-local"
-  import { onUnmounted, reactive } from "vue"
+  import { onUnmounted, ref, reactive } from "vue"
   import { eventIcon } from "@/utils/map.js"
   const props = defineProps({
     map: { type: Object, default: () => null },
     drawBtns: { type: Array, required: true, default: [] },
+    options: { type: Object, default: null },
   })
   const emits = defineEmits(["drawResultLayer"])
+  const cancel = ref(false)
   const draw = reactive({
     editableLayers: null,
     drawControl: null,
@@ -57,6 +60,8 @@
     },
   }
 
+  Object.assign(options, props.options)
+
   let index = 0
   function watchDraw() {
     // 监听绘制事件 vue3Proxy原因
@@ -69,13 +74,26 @@
         // props.map.off("draw:drawstop")
         draw.drawControl.disable()
         emitLayer(draw.type, draw.editableLayers)
+        if (draw.type === "marker") {
+          cancel.value = false
+        }
         index = 0
         props.map.off("draw:drawstop")
       }
     })
+    props.map.on("contextmenu", () => {
+      // props.map.off("draw:markercontext")
+      if (draw.type === "marker") {
+        cancel.value = false
+      }
+      draw.drawControl.disable()
+    })
   }
 
   function drawEvent(type) {
+    if (type === "marker") {
+      cancel.value = true
+    }
     // draw.drawControl = this.enableDraw(type)
     watchDraw()
     enableDraw(type)
@@ -135,6 +153,13 @@
 </script>
 
 <style lang="less" scoped>
+  .markertip {
+    position: fixed;
+    z-index: 5;
+    top: 80px;
+    left: 50%;
+    font-size: 16px;
+  }
   .draw-btn {
     display: flex;
     width: 100%;
