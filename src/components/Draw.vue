@@ -8,7 +8,7 @@
       @click="drawEvent(draw.type)"
       >{{ draw.name }}</el-button
     >
-    <div v-if="cancel" class="markertip">右键取消</div>
+    <div v-if="cancel" class="markertip">提示：单击鼠标左键完成标记，单击鼠标右键取消</div>
   </div>
 </template>
 
@@ -79,6 +79,7 @@
         }
         index = 0
         props.map.off("draw:drawstop")
+        props.map.off("contextmenu")
       }
     })
     props.map.on("contextmenu", () => {
@@ -156,9 +157,16 @@
   .markertip {
     position: fixed;
     z-index: 5;
-    top: 80px;
-    left: 50%;
+    top: 70px;
+    left: 40%;
+    padding: 0 5px;
+    height: 25px;
+    line-height: 25px;
     font-size: 16px;
+    color: #fff;
+    background: #409eff;
+    border: 1px solid #409eff;
+    border-radius: 5px;
   }
   .draw-btn {
     display: flex;

@@ -56,6 +56,20 @@
         <el-button size="small" @click="clearAllLayer">清除图层</el-button>
       </div>
     </div>
+    <div v-if="treeselect.diliveryShop != undefined" class="start-end">
+      <el-tree-select
+        v-model="value"
+        :data="data"
+        placeholder="起点"
+        check-strictly
+        :render-after-expand="false"
+      />
+      <div>配送点坐标{{ treeselect.diliveryPoint }}</div>
+      <div v-for="item in treeselect.diliveryShop">
+        <div class="shopName">{{ item.description }}</div>
+        {{ treeselect.length }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -108,6 +122,12 @@
     shopNum: 10,
   })
 
+  const treeselect = reactive({
+    value: "",
+    data: [],
+    diliveryPoint: null,
+    diliveryShop: [],
+  })
   const options = {
     delay: 400,
     dashArray: [10, 20],
@@ -155,6 +175,8 @@
       // console.log(e)
       e.layer.openPopup()
       let latlng = e.sourceTarget.getLatLng()
+
+      treeselect.diliveryShop = latlng
       document.querySelector(".pre").onclick = function () {
         // console.log(latlng)
         setTimeout(() => {
@@ -192,6 +214,7 @@
       loading.value = true
 
       const latlng = resultLayer.getLatLng()
+      treeselect.diliveryPoint = latlng
       layers.aimMarker = L.marker(latlng, { icon: eventIcon, draggable: true })
         .bindPopup("配送点")
         .openPopup()
@@ -225,7 +248,7 @@
 
   // 搜索符合条件的门店
   const searchFitShop = async (name, range) => {
-    console.log(layers.aimMarker)
+    // console.log(layers.aimMarker)
     // clearLayer()
     layers.bufferRegion.clearLayers()
     // layers.regionMarkers.clearLayers()
@@ -238,7 +261,6 @@
       return
     }
 
-    emits("listLoading", true)
     if (!statusFitShop.value || !fitResult.latlngArray || !fitResult.fitResultLayerArr) {
       let bufferLayer = await bindBuffer(form.range)
       let { geometryLayer, latlngArray, fitResultLayerArr } = await getBufferInnerShop(
@@ -334,7 +356,7 @@
     // let ant = antPath([guide[0].latlngs])
     // console.log(layers.aimMarker)
     console.log(route, guide)
-
+    treeselect.diliveryShop = guide[0].routeGuide
     layers.guideLayer = guide[0].guideLayer
 
     props.map.fitBounds(layers.guideLayer.getBounds())
@@ -514,6 +536,16 @@
           }
         }
       }
+    }
+    .start-end {
+      position: fixed;
+      max-width: 300px;
+      scroll-behavior: auto;
+      height: 200px;
+      margin: 0 10px;
+      left: 50%;
+      bottom: 0px;
+      z-index: 5;
     }
   }
 </style>

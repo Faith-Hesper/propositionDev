@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-16 21:33
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-26 20:14
+ * @LastEditTime: 2022-07-27 20:56
  * @Description:
  */
 
@@ -136,7 +136,7 @@ const getRouteGuide = async (facilityPathList, aimLatLng) => {
         return L.marker(latlng, { icon: pointIcon })
       },
       style: () => {
-        return { color: "#ffb676", weight: 8 }
+        return { color: "#ffb676", weight: 10 }
       },
     })
 

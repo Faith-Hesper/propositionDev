@@ -181,6 +181,11 @@
     return L.featureGroup([...facilities, ...facilitiesRoute])
   }
 
+  const changeLoading = status => {
+    console.log(status)
+    listLoading.value = status
+  }
+
   const showShopList = data => {
     MyCustomMap.shopData = data
     listLoading.value = false
@@ -239,11 +244,7 @@
               v-if="MyCustomMap.map"
               :map="MyCustomMap.map"
               @shopData="showShopList"
-              @listLoading="
-                status => {
-                  listLoading = status
-                }
-              "
+              @listLoading="changeLoading"
             ></StoreQuery>
           </template>
         </CardContainer>
@@ -272,11 +273,7 @@
             <GoodsDilivery
               v-if="MyCustomMap.map"
               @shopData="showShopList"
-              @listLoading="
-                status => {
-                  listLoading = status
-                }
-              "
+              @listLoading="changeLoading"
               :map="MyCustomMap.map"
             ></GoodsDilivery>
           </template>

@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-20 19:23
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-09 10:57
+ * @LastEditTime: 2022-07-27 21:28
  * @Description:
  */
 window.BASE_CONFIG = {

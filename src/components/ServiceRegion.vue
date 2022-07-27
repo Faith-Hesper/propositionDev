@@ -52,7 +52,7 @@
         let result = L.geoJSON(geoServiceRegion, {
           onEachFeature: (feature, layer) => {
             let color = randomColor()
-            console.log(color)
+            // console.log(color)
             // console.log(feature, layer)
             let serviceRegionLayer = L.geoJSON(feature.geometry, {
               style: () => {
