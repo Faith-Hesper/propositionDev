@@ -61,6 +61,14 @@
     editableLayers: null,
     loading: false,
     aimMarkerLayer: null,
+    bufferLayer: null,
+    markersLayer: null,
+  })
+  const statusFitShop = ref(false)
+  const fitResult = reactive({
+    geometryLayer: null,
+    latlngArray: null,
+    fitResultLayerArr: null,
   })
 
   const form = reactive({
@@ -109,6 +117,8 @@
     },
   ]
   MyCustomMap.editableLayers = L.featureGroup().addTo(props.map)
+  MyCustomMap.bufferLayer = L.featureGroup()
+  MyCustomMap.markersLayer = L.featureGroup()
 
   MyCustomMap.editableLayers
     .on("mouseover", e => {
@@ -158,6 +168,26 @@
     MyCustomMap.editableLayers.addLayer(markerLayerBind)
   }
 
+  // 绑定缓冲区图层
+  const bindBuffer = async range => {
+    if (MyCustomMap.editableLayers.hasLayer(MyCustomMap.bufferLayer)) {
+      MyCustomMap.editableLayers.removeLayer(MyCustomMap.bufferLayer)
+    }
+    MyCustomMap.bufferLayer.clearLayers()
+
+    // 缓冲区图层
+    let bufferLayer = await bufferAnalyst({
+      geometry: MyCustomMap.aimMarkerLayer,
+      distance: range,
+    })
+    let bufferLayerBind = L.geoJSON(bufferLayer)
+      .bindPopup("三公里", { autoClose: false, closeOnClick: false })
+      .openPopup()
+    props.map.fitBounds(bufferLayerBind.getBounds())
+    MyCustomMap.bufferLayer.addLayer(bufferLayerBind).addTo(MyCustomMap.editableLayers)
+    return await Promise.resolve(bufferLayerBind)
+  }
+
   const searchFitShop = async () => {
     emits("listLoading", true)
     // 缓冲区图层
@@ -181,48 +211,36 @@
     bindBufferShop(fitResultLayerArr)
   }
 
-  // 绑定缓冲区图层
-  const bindBuffer = async range => {
-    // MyCustomMap.editableLayers
-
-    // 缓冲区图层
-    let bufferLayer = await bufferAnalyst({
-      geometry: MyCustomMap.aimMarkerLayer,
-      distance: range,
-    })
-    let bufferLayerBind = L.geoJSON(bufferLayer)
-      .bindPopup("三公里", { autoClose: false, closeOnClick: false })
-      .openPopup()
-    props.map.fitBounds(bufferLayerBind.getBounds())
-    MyCustomMap.editableLayers.addLayer(bufferLayerBind)
-    return await Promise.resolve(bufferLayerBind)
-  }
-
   // 绑定范围内门店图层 marker
   const bindBufferShop = fitResultLayerArr => {
-    // MyCustomMap.editableLayers.clearLayers()
+    if (MyCustomMap.editableLayers.hasLayer(MyCustomMap.markersLayer)) {
+      MyCustomMap.editableLayers.removeLayer(MyCustomMap.markersLayer)
+    }
+    MyCustomMap.markersLayer.clearLayers()
 
     emits("listLoading", true)
 
     formatShopData(fitResultLayerArr)
     // console.log(latlngArray, fitResultLayerArr)
     let fitResultLayer = arrFeatureToGeoJson(fitResultLayerArr)
-    // console.log(fitResultLayer)
     let fitResultLayerBind = geoJsonBind(fitResultLayer)
+    console.log(fitResultLayerBind)
 
-    MyCustomMap.editableLayers.addLayer(fitResultLayerBind)
+    MyCustomMap.markersLayer.addLayer(fitResultLayerBind).addTo(MyCustomMap.editableLayers)
   }
 
   const geoJsonBind = features => {
     return L.geoJSON(features, {
-      pointToLayer: (feature, latlng) => {
-        return L.marker(latlng, { icon: greenIcon }).bindPopup(`
+      pointToLayer: (feature, latLng) => {
+        let latlng = [latLng.lat, latLng.lng].reverse()
+        let marker = L.marker(latlng, { icon: greenIcon }).bindPopup(`
     <div class="shop">
     <p>店名：${feature.properties.NAME}</p>
     <p>品类：${feature.properties.CATEGORY}</p>
     <p>价格：${feature.properties.PRICE}元/kg</p>
     </div>
     `)
+        return marker
       },
     })
   }

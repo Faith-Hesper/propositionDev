@@ -78,6 +78,7 @@
     // })
   }
 
+  // 坐标
   const getLatLngArr = async features => {
     return await new Promise((resolve, reject) => {
       let latlngArray = []

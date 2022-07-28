@@ -193,6 +193,7 @@
 
   const formatShopData = async features => {
     // console.log(features.features)
+    if (!features) return
     MyCustomMap.shopData = await Promise.resolve(
       features.map(feature => {
         return { ...feature.properties }
@@ -213,6 +214,8 @@
     MyCustomMap.map.eachLayer(layer => {
       layerIndex++
       if (layerIndex >= 4) {
+        // let layers = layer.getLayers()
+        // console.log(layers)
         MyCustomMap.map.removeLayer(layer)
       }
       // console.log(layer)

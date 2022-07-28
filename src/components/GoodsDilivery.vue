@@ -58,8 +58,8 @@
     </div>
     <div v-if="treeselect.diliveryShop != undefined" class="start-end">
       <el-tree-select
-        v-model="value"
-        :data="data"
+        v-model="treeselect.value"
+        :data="treeselect.data"
         placeholder="起点"
         check-strictly
         :render-after-expand="false"
@@ -93,6 +93,7 @@
     getfacilitiesPoint,
     getfacilitiesRoute,
     getRouteGuide,
+    getSearviceRegion,
   } from "@/utils/analyst.js"
   import { nextTick, onUnmounted, onUpdated, reactive, ref, shallowReactive, watch } from "vue"
   const props = defineProps({ map: { type: Object, default: () => null } })
@@ -184,6 +185,12 @@
         }, 1000)
         layers.bufferRegion.clearLayers()
         diliveryRouteAnalyst([latlng])
+      }
+      document.querySelector(".range").onclick = async function () {
+        // console.log(latlng)
+        let layer = await getSearviceRegion(latlng)
+        MyCustomMap.editableLayers.addLayer(layer)
+        console.log(layer)
       }
     })
     .on("popupopen", e => {
@@ -425,6 +432,7 @@
           </div>
         <div class="footer">
           <button class="pre">设为配送商店</button>
+          <button class="range">商店服务范围</button>
         </div>
         </div>
   `,
@@ -447,6 +455,7 @@
 
   const clearLayer = () => {
     if (!MyCustomMap.editableLayers) return
+    emits("shopData", data)
     props.map.removeLayer(MyCustomMap.editableLayers)
     MyCustomMap.editableLayers.clearLayers()
     layers.regionMarkers.clearLayers()
@@ -491,6 +500,9 @@
   )
 
   onUpdated(() => {
+    if (!props.map.hasLayer(MyCustomMap.editableLayers)) {
+      MyCustomMap.editableLayers.addTo(props.map)
+    }
     console.log("onUpdated")
   })
 

@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-20 19:23
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-27 21:28
+ * @LastEditTime: 2022-07-28 21:13
  * @Description:
  */
 window.BASE_CONFIG = {
@@ -13,6 +13,7 @@ window.BASE_CONFIG = {
     maxZoom: 18,
     zoom: 12,
     map_crs: "EPSG4326",
+    // maxBounds: [],
     baseMapLayer: [
       {
         name: "天地图底图",

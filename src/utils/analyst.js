@@ -2,12 +2,13 @@
  * @Author: Faith
  * @Date: 2022-07-16 21:33
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-27 20:56
+ * @LastEditTime: 2022-07-28 20:21
  * @Description:
  */
 
-import { aimIcon, searchByGeometry } from "@/utils/map.js"
+import { aimIcon, searchByGeometry, serviceAreaAnalyst } from "@/utils/map.js"
 import { walkIcon, pointIcon, marketIcon, startIcon } from "@/utils/Icon.js"
+import { randomColor, cacheShopData } from "@/utils/tool.js"
 
 // 获取缓冲区内的门店 marker latlng
 const getBufferInnerShop = async (bufferLayer, name, range, count = 145) => {
@@ -147,4 +148,27 @@ const getRouteGuide = async (facilityPathList, aimLatLng) => {
   return await Promise.all(promiseRoute)
 }
 
-export { getBufferInnerShop, getServiceArea, getfacilitiesPoint, getfacilitiesRoute, getRouteGuide }
+const getSearviceRegion = async latlngArr => {
+  // 服务区分析
+  let [serviceAnalystData] = await serviceAreaAnalyst([latlngArr])
+  let { serviceRegion } = serviceAnalystData
+  console.log(serviceRegion)
+  return await new Promise((resolve, reject) => {
+    let result = L.geoJSON(serviceRegion, {
+      style: () => {
+        let color = randomColor()
+        return { color: color }
+      },
+    })
+    resolve(result)
+  })
+}
+
+export {
+  getBufferInnerShop,
+  getServiceArea,
+  getfacilitiesPoint,
+  getfacilitiesRoute,
+  getRouteGuide,
+  getSearviceRegion,
+}
