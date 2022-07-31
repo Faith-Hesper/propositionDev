@@ -106,7 +106,7 @@
     shallowReactive,
     watch,
   } from "vue"
-  import { latLng } from "leaflet"
+
   const props = defineProps({
     map: { type: Object, default: () => null },
     status: { type: Boolean, default: false },
@@ -146,16 +146,7 @@
     diliveryPoint: null,
     diliveryShop: [],
   })
-  const options = {
-    delay: 400,
-    dashArray: [10, 20],
-    weight: 5,
-    color: "#0000FF",
-    pulseColor: "#FFFFFF",
-    paused: false,
-    reverse: false,
-    hardwareAccelerated: true,
-  }
+
   const nowActive = index => {
     active.value = index
     if (!layers.tempLayer) return
@@ -557,6 +548,11 @@
           throw new Error(err)
         })
         statusFitShop.value = true
+
+        layers.guideLayer.clearLayers()
+        treeselect.data = []
+        treeselect.shopName = ""
+        treeselect.diliveryShop = []
         bindBufferShop(fitResultLayerArr)
         fitResult.latlngArray = latlngArray
         fitResult.fitResultLayerArr = fitResultLayerArr
