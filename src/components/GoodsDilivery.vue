@@ -162,16 +162,18 @@
     layers.tempLayer.clearLayers()
     // props.map.flyTo()
     let layer = L.geoJSON(treeselect.data[index], {
-      pointToLayer: (point, latLng) => {
-        // console.log(latLng)
-        // L.marker(latLng,{icon:})
-      },
       style: feature => {
-        console.log(feature)
         return { color: "#2a81ff", weight: 12 }
       },
     })
+      .bindTooltip(`${treeselect.diliveryShop[index].description}`, {
+        direction: "top",
+        permanent: true,
+      })
+      .openPopup()
+
     layers.tempLayer.addLayer(layer).addTo(MyCustomMap.editableLayers)
+
     // console.log()
   }
   const clearActive = () => {
@@ -207,33 +209,10 @@
   layers.tempLayer = L.featureGroup()
   layers.regionMarkers = L.featureGroup()
     .on("mouseover", e => {
-      e.layer.openPopup()
+      // e.layer.openPopup()
     })
     .on("click", e => {
       e.layer.openPopup()
-      // let latlng = e.sourceTarget.getLatLng()
-
-      // treeselect.diliveryShop = latlng
-      // document.querySelector(".pre").onclick = function () {
-      //   // console.log(latlng)
-      //   setTimeout(() => {
-      //     e.sourceTarget.closePopup()
-      //   }, 1000)
-      //   layers.bufferRegion.clearLayers()
-      //   diliveryRouteAnalyst([latlng])
-      // }
-      // document.querySelector(".range").onclick = async function () {
-      //   // console.log(latlng)
-      //   layers.searviceRegion.clearLayers()
-      //   let layer = await getSearviceRegion(latlng)
-      //   layers.searviceRegion.addLayer(layer).addTo(MyCustomMap.editableLayers)
-      //   setTimeout(() => {
-      //     e.sourceTarget.closePopup()
-      //   }, 1000)
-      //   // console.log(layer)
-      // }
-    })
-    .on("popupopen", e => {
       let latlng = e.sourceTarget.getLatLng()
 
       treeselect.diliveryShop = latlng
@@ -652,7 +631,7 @@
       height: 200px;
       margin: 0 10px;
       left: 45%;
-      bottom: 0px;
+      bottom: 15px;
       z-index: 5;
       .start {
         text-align: left;

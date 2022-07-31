@@ -327,10 +327,6 @@
       style="position: absolute"
     >
     </MapContainer>
-    <div class="route">
-      <div>起点</div>
-      <div>终点</div>
-    </div>
   </div>
 </template>
 
@@ -364,7 +360,7 @@
     }
     .clearbar {
       position: absolute;
-      top: 180px;
+      top: 160px;
       right: 0;
       margin: 0 10px;
       z-index: 5;
@@ -380,7 +376,7 @@
       position: absolute;
       width: 400px;
       margin: 0 10px;
-      top: 250px;
+      top: 270px;
       z-index: 5;
       .list-header {
         height: 25px;
@@ -396,21 +392,21 @@
       position: absolute;
       margin: 0 10px;
       right: 150px;
-      top: 300px;
+      top: 270px;
       z-index: 5;
     }
     .hotLayerbar {
       position: absolute;
       margin: 0 10px;
       right: 0;
-      top: 210px;
+      top: 190px;
       z-index: 5;
     }
     .serviceareabar {
       position: absolute;
       margin: 0 10px;
       right: 0px;
-      top: 250px;
+      top: 230px;
       z-index: 5;
     }
   }

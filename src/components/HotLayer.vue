@@ -91,7 +91,9 @@
       width: 100%;
       height: 100%;
       margin: -9px;
-      cursor: pointer;
     }
+  }
+  .hotmap:hover {
+    cursor: pointer;
   }
 </style>

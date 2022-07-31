@@ -137,7 +137,9 @@
       width: 100%;
       height: 100%;
       margin: -9px;
-      cursor: pointer;
     }
+  }
+  .service-region:hover {
+    cursor: pointer;
   }
 </style>
