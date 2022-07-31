@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-17 14:05
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-31 16:46
+ * @LastEditTime: 2022-07-31 21:40
  * @Description:
  */
 import { searchBySql } from "@/utils/map.js"
@@ -23,6 +23,7 @@ function randomColor() {
   return color
 }
 
+// 缓存所有商店名字和其geojson数据
 function cacheShopData() {
   let sqlParam = {
     fromIndex: 0,

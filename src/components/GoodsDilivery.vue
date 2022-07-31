@@ -121,13 +121,14 @@
     control: null,
     editableLayers: null,
   })
+
   const layers = shallowReactive({
-    aimMarker: null,
-    bufferRegion: null,
-    regionMarkers: null,
-    animateMarker: null,
-    guideLayer: null,
-    searviceRegion: null,
+    aimMarker: null, // 配送点
+    bufferRegion: null, // 缓冲区
+    regionMarkers: null, // 缓冲区内marker
+    animateMarker: null, // marker 动画小人
+    guideLayer: null, // 路线指引
+    searviceRegion: null, // 商店服务范围
     tempLayer: null,
   })
   const fitResult = reactive({
@@ -147,6 +148,7 @@
     diliveryShop: [],
   })
 
+  // 鼠标移入高亮对应图层
   const nowActive = index => {
     active.value = index
     if (!layers.tempLayer) return
@@ -167,10 +169,14 @@
 
     // console.log()
   }
+
+  // 鼠标移除移除图层
   const clearActive = () => {
     if (!layers.tempLayer) return
     layers.tempLayer.clearLayers()
   }
+
+  // 输入数字校验
   const checkNum = (rule, value, callback) => {
     // console.log(rule, value)
     if (!value) {
@@ -282,6 +288,10 @@
 
       fitResult.latlngArray = latlngArray
       fitResult.fitResultLayerArr = fitResultLayerArr
+      ElNotification({
+        title: "Title",
+        message: h("i", { style: "color: teal" }, "标记可拖拽"),
+      })
     } catch (error) {}
   }
 
@@ -490,6 +500,7 @@
     })
   }
 
+  // 格式化获取到的商店数据
   const formatShopData = async features => {
     let data = await Promise.resolve(
       features.map(feature => {
@@ -527,11 +538,14 @@
     MyCustomMap.editableLayers.addTo(props.map)
   }
 
+  // 鼠标拖拽 marker 改变视图中显示的坐标数据
   const changeLatLng = e => {
     // console.log(e)
     let latlng = e.target.getLatLng()
     treeselect.diliveryPoint = latlng
   }
+
+  // 监听 查询范围数字
   watch(
     () => form.range,
     debounce(async function (newRange) {
@@ -548,6 +562,7 @@
           throw new Error(err)
         })
         statusFitShop.value = true
+        activeNames.value = ["end"]
 
         layers.guideLayer.clearLayers()
         treeselect.data = []

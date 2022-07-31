@@ -21,7 +21,6 @@
   const fullscreenLoading = ref(false)
   const listLoading = ref(false)
   const diliveryClear = ref(false)
-  const url = "http://localhost:8090/iserver/services/map-ChengduFresh/rest/maps/ChengduMap"
 
   const drawBtns = [
     {
@@ -156,35 +155,6 @@
       // console.log(latlng)
       return latlng
     })
-  }
-
-  const bindNetAnaLayer = serviceResult => {
-    // 服务区域
-    let serviceRegion = serviceResult.map(serviceArea => {
-      return serviceArea.serviceRegion
-    })
-
-    let routes = serviceResult.map(serviceArea => {
-      return serviceArea.routes
-    })
-  }
-
-  // 获取配送路线
-  const getDeliveryRoute = facilityPathList => {
-    let facilities = facilityPathList.map(facilityPath => {
-      // console.log(facilityPath.facility)
-      let facility = facilityPath.facility
-      return L.marker([facility.y, facility.x])
-    })
-    let facilitiesRoute = facilityPathList.map(facilityPath => {
-      return L.geoJSON(facilityPath.route, {
-        style: () => {
-          return { color: "#ff7800", weight: 5, opacity: 0.65 }
-        },
-      })
-    })
-
-    return L.featureGroup([...facilities, ...facilitiesRoute])
   }
 
   const changeLoading = status => {
