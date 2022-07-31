@@ -56,7 +56,8 @@
               class="step"
               :space="50"
               :title="item.description"
-              @click="nowActive(index)"
+              @mouseover="nowActive(index)"
+              @mouseleave="clearActive(index)"
               v-for="(item, index) in treeselect.diliveryShop"
             >
             </el-step>
@@ -97,6 +98,7 @@
   import {
     computed,
     nextTick,
+    onMounted,
     onUnmounted,
     onUpdated,
     reactive,
@@ -104,6 +106,7 @@
     shallowReactive,
     watch,
   } from "vue"
+  import { latLng } from "leaflet"
   const props = defineProps({
     map: { type: Object, default: () => null },
     status: { type: Boolean, default: false },
@@ -157,7 +160,12 @@
     active.value = index
     if (!layers.tempLayer) return
     layers.tempLayer.clearLayers()
+    // props.map.flyTo()
     let layer = L.geoJSON(treeselect.data[index], {
+      pointToLayer: (point, latLng) => {
+        // console.log(latLng)
+        // L.marker(latLng,{icon:})
+      },
       style: feature => {
         console.log(feature)
         return { color: "#2a81ff", weight: 12 }
@@ -165,6 +173,10 @@
     })
     layers.tempLayer.addLayer(layer).addTo(MyCustomMap.editableLayers)
     // console.log()
+  }
+  const clearActive = () => {
+    if (!layers.tempLayer) return
+    layers.tempLayer.clearLayers()
   }
   const checkNum = (rule, value, callback) => {
     // console.log(rule, value)
@@ -194,12 +206,34 @@
   layers.searviceRegion = L.featureGroup()
   layers.tempLayer = L.featureGroup()
   layers.regionMarkers = L.featureGroup()
-    // .on("mouseover", e => {
-    //   e.layer.openPopup()
-    // })
-    // .on("mouseout", e => e.layer.closePopup())
+    .on("mouseover", e => {
+      e.layer.openPopup()
+    })
     .on("click", e => {
       e.layer.openPopup()
+      // let latlng = e.sourceTarget.getLatLng()
+
+      // treeselect.diliveryShop = latlng
+      // document.querySelector(".pre").onclick = function () {
+      //   // console.log(latlng)
+      //   setTimeout(() => {
+      //     e.sourceTarget.closePopup()
+      //   }, 1000)
+      //   layers.bufferRegion.clearLayers()
+      //   diliveryRouteAnalyst([latlng])
+      // }
+      // document.querySelector(".range").onclick = async function () {
+      //   // console.log(latlng)
+      //   layers.searviceRegion.clearLayers()
+      //   let layer = await getSearviceRegion(latlng)
+      //   layers.searviceRegion.addLayer(layer).addTo(MyCustomMap.editableLayers)
+      //   setTimeout(() => {
+      //     e.sourceTarget.closePopup()
+      //   }, 1000)
+      //   // console.log(layer)
+      // }
+    })
+    .on("popupopen", e => {
       let latlng = e.sourceTarget.getLatLng()
 
       treeselect.diliveryShop = latlng
@@ -221,15 +255,6 @@
         }, 1000)
         // console.log(layer)
       }
-    })
-    .on("popupopen", e => {
-      // console.log(e)
-      // let latlng = e.sourceTarget.getLatLng()
-      // document.querySelector(".pre").onclick = function () {
-      //   // console.log(latlng)
-      //   layers.bufferRegion.clearLayers()
-      //   diliveryRouteAnalyst([latlng])
-      // }
     })
 
   layers.bufferRegion = L.featureGroup()
@@ -421,19 +446,21 @@
         return `${layer.feature.properties.description}`
       })
       .addTo(MyCustomMap.editableLayers)
-    // MyCustomMap.editableLayers.addLayer(ant)
-    // console.log(route)
-    // let routeLine = L.polyline(route[0]).addTo(props.map)
-    // let ant = antPath(route, options)
-    // props.map.addLayer(ant)
-    // console.log(routeLine)
+
     layers.animateMarker = L.animatedMarker(route[0], {
       icon: walkIcon,
       interval: 400,
       loop: false,
       isPlay: true,
       autoStart: true,
-    }).addTo(MyCustomMap.editableLayers)
+    })
+      .on("mouseover", () => {
+        layers.animateMarker.pause()
+      })
+      .on("mouseout", () => {
+        layers.animateMarker.start()
+      })
+      .addTo(MyCustomMap.editableLayers)
   }
 
   // 获取配送路线
@@ -506,6 +533,7 @@
     if (!MyCustomMap.editableLayers) return
     emits("shopData", null)
     treeselect.diliveryPoint = null
+    active.value = 0
     props.map.removeLayer(MyCustomMap.editableLayers)
     MyCustomMap.editableLayers.clearLayers()
     layers.regionMarkers.clearLayers()
@@ -521,6 +549,7 @@
     if (!MyCustomMap.editableLayers) return
     emits("shopData", null)
     treeselect.diliveryPoint = null
+    active.value = 0
     props.map.removeLayer(MyCustomMap.editableLayers)
     MyCustomMap.editableLayers.clearLayers()
     // layers.aimMarker.clearLayers()
@@ -569,6 +598,8 @@
     }
     console.log("onUpdated")
   })
+
+  onMounted(() => {})
 
   onUnmounted(() => {
     clearAllLayer()
