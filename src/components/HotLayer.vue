@@ -85,13 +85,13 @@
       font-size: 12px;
       line-height: 24px;
     }
-  }
-  input::before {
-    content: "";
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    margin: -9px;
-    cursor: pointer;
+    input::before {
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      margin: -9px;
+      cursor: pointer;
+    }
   }
 </style>

@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-04 16:32
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-24 18:21
+ * @LastEditTime: 2022-07-31 11:21
  * @Description:
  */
 
@@ -118,7 +118,7 @@ async function searchByGeometry({ geometry, fromIndex = 0, toIndex = 19, count =
           })
           reject(serviceResult.error)
         } else {
-          console.log(serviceResult.result)
+          // console.log(serviceResult.result)
           if (serviceResult.result.totalCount > toIndex && serviceResult.result.featureCount != 0) {
             ElMessage({
               showClose: true,
@@ -328,7 +328,7 @@ async function closestFacilitiesAnalyst({ eventPoint, facilityPonit, facilityNum
     networkAnalystService.findClosestFacilities(
       closestFacilitiesAnalystParameters,
       serviceResult => {
-        // console.log(serviceResult)
+        console.log(serviceResult)
         // let serviceAreaLists = serviceResult.result.serviceAreaList.map(serviceArea => {
         //   return serviceArea.serviceRegion
         // })
@@ -348,6 +348,39 @@ async function closestFacilitiesAnalyst({ eventPoint, facilityPonit, facilityNum
   })
 }
 
+// 交通换乘分析方案
+async function trafficTransferAnalyst({ points, tactic = "LESS_TIME" } = {}) {
+  let poi = points.map(item => {
+    console.log(item)
+    return { x: item.lat, y: item.lng }
+  })
+  console.log(poi)
+  const params = new L.supermap.TransferSolutionParameters({
+    solutionCount: 6, //最大换乘导引数量
+    transferTactic: tactic, //公交换乘策略类型
+    walkingRatio: 10, //步行与公交的消耗权重比
+    points: poi, //起始点坐标
+  })
+
+  let trafficTransferService = new L.supermap.TrafficTransferAnalystService(
+    BASE_CONFIG.BASEURL.traffictransferanalystUrl
+  )
+  return await new Promise((resolve, reject) => {
+    trafficTransferService.analysisTransferSolution(params, serviceResult => {
+      if (serviceResult.type === "processFailed") {
+        ElMessage({
+          showClose: true,
+          message: `${serviceResult.error}`,
+          type: "error",
+        })
+        reject(serviceResult.error.errorMsg)
+      }
+      console.log(serviceResult.result)
+      resolve(serviceResult.result)
+    })
+  })
+}
+
 export default mapObject
 export {
   CustomIcon1,
@@ -361,4 +394,5 @@ export {
   bufferAnalyst,
   serviceAreaAnalyst,
   closestFacilitiesAnalyst,
+  trafficTransferAnalyst,
 }

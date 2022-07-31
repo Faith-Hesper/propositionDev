@@ -20,6 +20,7 @@
 
   const fullscreenLoading = ref(false)
   const listLoading = ref(false)
+  const diliveryClear = ref(false)
   const url = "http://localhost:8090/iserver/services/map-ChengduFresh/rest/maps/ChengduMap"
 
   const drawBtns = [
@@ -61,15 +62,14 @@
       })
       .addTo(MyCustomMap.map)
 
-    MyCustomMap.control = L.control
-      .layers(
-        { "成都地图": overlayer },
-        {
-          "drawlayer": MyCustomMap.editableLayers,
-        },
-        { position: "topright", collapsed: true }
-      )
-      .addTo(MyCustomMap.map)
+    MyCustomMap.control = L.control.layers(
+      { "成都地图": overlayer },
+      {
+        "drawlayer": MyCustomMap.editableLayers,
+      },
+      { position: "topright", collapsed: true }
+    )
+    // .addTo(MyCustomMap.map)
     // MyCustomMap.control.addBaseLayer(overlayer, "成都")
   }
 
@@ -100,7 +100,10 @@
     MyCustomMap.editableLayers.addLayer(resultLayer).addTo(MyCustomMap.map)
     // console.log(resultLayer._bounds)
     let { features } = await searchByBounds({ bounds: resultLayer._bounds })
-    if (features.length === 0) return
+    if (features.length === 0) {
+      fullscreenLoading.value = false
+      return
+    }
     formatShopData(features)
     let layer = geoJsonBind(features)
     MyCustomMap.editableLayers.addLayer(layer)
@@ -114,7 +117,10 @@
     MyCustomMap.editableLayers.addLayer(resultLayer).addTo(MyCustomMap.map)
     // console.log(resultLayer)
     let { features } = await searchByGeometry({ geometry: L.polygon(resultLayer._latlngs) })
-    if (features.length === 0) return
+    if (features.length === 0) {
+      fullscreenLoading.value = false
+      return
+    }
     // console.log(features)
     formatShopData(features)
     let layer = geoJsonBind(features)
@@ -182,11 +188,15 @@
   }
 
   const changeLoading = status => {
-    console.log(status)
+    // console.log(status)
     listLoading.value = status
   }
 
   const showShopList = data => {
+    if (!data) {
+      MyCustomMap.shopData = []
+      listLoading.value = false
+    }
     MyCustomMap.shopData = data
     listLoading.value = false
   }
@@ -215,7 +225,11 @@
       layerIndex++
       if (layerIndex >= 4) {
         // let layers = layer.getLayers()
-        // console.log(layers)
+        // console.log(layer)
+        if (layer._layers) {
+          // layer.clearLayers()
+          diliveryClear.value = true
+        }
         MyCustomMap.map.removeLayer(layer)
       }
       // console.log(layer)
@@ -278,6 +292,7 @@
               @shopData="showShopList"
               @listLoading="changeLoading"
               :map="MyCustomMap.map"
+              :status="diliveryClear"
             ></GoodsDilivery>
           </template>
         </CardContainer>
@@ -341,7 +356,7 @@
       height: 100px;
       position: absolute;
       right: 0;
-      margin: 30px 10px 10px 0;
+      margin: 10px 10px 10px 0;
       z-index: 5;
       .el-button {
         width: 50px;
@@ -358,14 +373,14 @@
     .querybar {
       position: absolute;
       left: 0;
-      margin: 30px 0 0 10px;
+      margin: 10px 0 0 10px;
       z-index: 5;
     }
     .store-list {
       position: absolute;
       width: 400px;
       margin: 0 10px;
-      top: 200px;
+      top: 250px;
       z-index: 5;
       .list-header {
         height: 25px;

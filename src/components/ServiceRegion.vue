@@ -1,21 +1,23 @@
 <template>
   <div class="service-region">
-    <div class="analystbtn">
-      <!-- <div class="title">查询范围内商店</div> -->
-      <el-button @click="showSearviceRegion">展示服务范围</el-button>
-    </div>
+    <input type="checkbox" id="serviceMap" @click="changeCheck" />
+    <label for="serviceMap">展示服务范围</label>
   </div>
 </template>
 
 <script setup>
   import { searchBySql, serviceAreaAnalyst } from "@/utils/map.js"
-  import { arrFeatureToGeoJson, randomColor, cacheShopData } from "@/utils/tool.js"
-  import { nextTick, onMounted, reactive, ref, shallowReactive } from "vue"
+  import { arrFeatureToGeoJson, randomColor, cacheShopData, debounce } from "@/utils/tool.js"
+  import { nextTick, onMounted, reactive, ref, shallowReactive, watch } from "vue"
 
   const props = defineProps({ map: { type: Object, default: () => null } })
-  const serviceObject = reactive({
+  const serviceObject = shallowReactive({
     serviceLayer: null,
   })
+  const check = ref(false)
+  const changeCheck = () => {
+    check.value = check.value === true ? false : true
+  }
   let sqlParam = {
     fromIndex: 0,
     toIndex: 20,
@@ -90,6 +92,21 @@
     })
   }
 
+  watch(
+    check,
+    debounce(newValue => {
+      if (newValue) {
+        if (serviceObject.serviceLayer.getLayers().length === 0) {
+          showSearviceRegion()
+        } else {
+          serviceObject.serviceLayer.addTo(props.map)
+        }
+      } else {
+        props.map.removeLayer(serviceObject.serviceLayer)
+      }
+    }, 200)
+  )
+
   onMounted(() => {
     featuresArr.value = localStorage.getItem("shopsFeatures")
     if (featuresArr.value) {
@@ -101,29 +118,26 @@
 
 <style lang="less" scoped>
   .service-region {
-    width: 150px;
-    .title {
-      width: 100%;
-      font-size: 14px;
-      font-weight: bold;
-      color: grey;
-      background: #e4eef6;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: relative;
+    height: 30px;
+    padding: 0 5px;
+    border: 1px solid #e4e7ed;
+    border-radius: 4px;
+    background-color: #fff;
+    label {
+      font-size: 12px;
+      line-height: 24px;
     }
-    /deep/ .el-form-item__content {
-      justify-content: center;
-    }
-    .analystbtn {
+    input::before {
+      content: "";
+      position: absolute;
       width: 100%;
-      height: 60px;
-      display: flex;
-      flex-direction: column;
-      align-content: space-around;
-      .draw-btn {
-        flex-direction: row;
-        .el-button {
-          width: 20px;
-        }
-      }
+      height: 100%;
+      margin: -9px;
+      cursor: pointer;
     }
   }
 </style>

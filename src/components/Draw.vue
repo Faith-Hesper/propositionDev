@@ -8,6 +8,7 @@
       @click="drawEvent(draw.type)"
       >{{ draw.name }}</el-button
     >
+    <slot></slot>
     <div v-if="cancel" class="markertip">提示：单击鼠标左键完成标记，单击鼠标右键取消</div>
   </div>
 </template>

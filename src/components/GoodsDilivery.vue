@@ -4,7 +4,6 @@
       <div class="title">查询{{ form.range }}公里范围内最近{{ form.name }}门店</div>
       <div class="form">
         <el-form
-          ref="formRef"
           size="small"
           :rules="rules"
           :model="form"
@@ -19,14 +18,6 @@
               v-model.number="form.range"
               type="number"
               placeholder="默认为3公里"
-              min="1"
-            ></el-input>
-          </el-form-item>
-          <el-form-item label="查询个数" prop="shopNum">
-            <el-input
-              v-model.number="form.shopNum"
-              type="number"
-              placeholder="默认为10个"
               min="1"
             ></el-input>
           </el-form-item>
@@ -56,26 +47,34 @@
         <el-button size="small" @click="clearAllLayer">清除图层</el-button>
       </div>
     </div>
-    <div v-if="treeselect.diliveryShop != undefined" class="start-end">
-      <el-tree-select
-        v-model="treeselect.value"
-        :data="treeselect.data"
-        placeholder="起点"
-        check-strictly
-        :render-after-expand="false"
-      />
-      <div>配送点坐标{{ treeselect.diliveryPoint }}</div>
-      <div v-for="item in treeselect.diliveryShop">
-        <div class="shopName">{{ item.description }}</div>
-        {{ treeselect.length }}
-      </div>
+    <div v-if="treeselect.diliveryPoint != undefined" class="start-end">
+      <el-collapse v-model="activeNames" accordion>
+        <el-collapse-item class="start" :title="'起点:' + treeselect.shopName" name="start">
+          <div>商店:{{ treeselect.shopName }}</div>
+          <el-steps direction="vertical" :active="active" finish-status="success">
+            <el-step
+              class="step"
+              :space="50"
+              :title="item.description"
+              @click="nowActive(index)"
+              v-for="(item, index) in treeselect.diliveryShop"
+            >
+            </el-step>
+          </el-steps>
+        </el-collapse-item>
+        <el-collapse-item class="end" title="配送点" name="end">
+          <div class="latlg">
+            <div>纬度:{{ treeselect.diliveryPoint.lat }}</div>
+            <div>经度:{{ treeselect.diliveryPoint.lng }}</div>
+          </div>
+        </el-collapse-item>
+      </el-collapse>
     </div>
   </div>
 </template>
 
 <script setup>
   import Draw from "@/components/Draw"
-  import { antPath } from "leaflet-ant-path"
   import {
     // greenIcon,
     eventIcon,
@@ -86,7 +85,7 @@
   } from "@/utils/map.js"
   import { walkIcon, pointIcon, marketIcon, startIcon } from "@/utils/Icon.js"
   import "@/utils/animate"
-  import { arrFeatureToGeoJson, debounce } from "@/utils/tool.js"
+  import { arrFeatureToGeoJson, debounce, throttle } from "@/utils/tool.js"
   import {
     getBufferInnerShop,
     getServiceArea,
@@ -95,12 +94,26 @@
     getRouteGuide,
     getSearviceRegion,
   } from "@/utils/analyst.js"
-  import { nextTick, onUnmounted, onUpdated, reactive, ref, shallowReactive, watch } from "vue"
-  const props = defineProps({ map: { type: Object, default: () => null } })
+  import {
+    computed,
+    nextTick,
+    onUnmounted,
+    onUpdated,
+    reactive,
+    ref,
+    shallowReactive,
+    watch,
+  } from "vue"
+  const props = defineProps({
+    map: { type: Object, default: () => null },
+    status: { type: Boolean, default: false },
+  })
   const emits = defineEmits(["listLoading", "shopData"])
+  const active = ref(0)
   const formShow = ref(false)
   const statusFitShop = ref(false)
   const loading = ref(false)
+  const activeNames = ref(["end"])
   const MyCustomMap = shallowReactive({
     control: null,
     editableLayers: null,
@@ -111,6 +124,8 @@
     regionMarkers: null,
     animateMarker: null,
     guideLayer: null,
+    searviceRegion: null,
+    tempLayer: null,
   })
   const fitResult = reactive({
     geometryLayer: null,
@@ -120,11 +135,10 @@
   const form = reactive({
     name: "",
     range: 3,
-    shopNum: 10,
   })
 
   const treeselect = reactive({
-    value: "",
+    shopName: "",
     data: [],
     diliveryPoint: null,
     diliveryShop: [],
@@ -139,7 +153,19 @@
     reverse: false,
     hardwareAccelerated: true,
   }
-
+  const nowActive = index => {
+    active.value = index
+    if (!layers.tempLayer) return
+    layers.tempLayer.clearLayers()
+    let layer = L.geoJSON(treeselect.data[index], {
+      style: feature => {
+        console.log(feature)
+        return { color: "#2a81ff", weight: 12 }
+      },
+    })
+    layers.tempLayer.addLayer(layer).addTo(MyCustomMap.editableLayers)
+    // console.log()
+  }
   const checkNum = (rule, value, callback) => {
     // console.log(rule, value)
     if (!value) {
@@ -155,7 +181,6 @@
   }
   const rules = reactive({
     range: [{ validator: checkNum, trigger: "change" }],
-    shopNum: [{ validator: checkNum, trigger: "change" }],
   })
   const queryBtn = [
     {
@@ -166,14 +191,14 @@
   ]
 
   MyCustomMap.editableLayers = L.featureGroup().addTo(props.map)
-
+  layers.searviceRegion = L.featureGroup()
+  layers.tempLayer = L.featureGroup()
   layers.regionMarkers = L.featureGroup()
     // .on("mouseover", e => {
     //   e.layer.openPopup()
     // })
     // .on("mouseout", e => e.layer.closePopup())
     .on("click", e => {
-      // console.log(e)
       e.layer.openPopup()
       let latlng = e.sourceTarget.getLatLng()
 
@@ -188,9 +213,13 @@
       }
       document.querySelector(".range").onclick = async function () {
         // console.log(latlng)
+        layers.searviceRegion.clearLayers()
         let layer = await getSearviceRegion(latlng)
-        MyCustomMap.editableLayers.addLayer(layer)
-        console.log(layer)
+        layers.searviceRegion.addLayer(layer).addTo(MyCustomMap.editableLayers)
+        setTimeout(() => {
+          e.sourceTarget.closePopup()
+        }, 1000)
+        // console.log(layer)
       }
     })
     .on("popupopen", e => {
@@ -204,13 +233,19 @@
     })
 
   layers.bufferRegion = L.featureGroup()
+  layers.searviceRegion = L.featureGroup()
 
   // .on("contextmenu", e => {})
 
   const markerLayer = async resultLayer => {
     try {
+      if (!props.map.hasLayer(MyCustomMap.editableLayers)) {
+        MyCustomMap.editableLayers.clearLayers()
+        MyCustomMap.editableLayers.addTo(props.map)
+      }
       if (layers.aimMarker) {
         MyCustomMap.editableLayers.removeLayer(layers.aimMarker)
+        props.map.removeLayer(layers.aimMarker)
         // layers.aimMarker.remove()
       }
       // clearLayer()
@@ -226,11 +261,13 @@
         .bindPopup("配送点")
         .openPopup()
         .addTo(MyCustomMap.editableLayers)
-        .on("mouseover", e => {
-          // e.layer.openPopup()
+        .on("move", e => {
+          let context = e
+          throttle(changeLatLng(context), 1000)
         })
-        .on("mouseout", e => {
-          console.log(e)
+        .on("dragend", e => {
+          let context = e
+          throttle(changeLatLng(context), 500)
         })
 
       // 3公里范围缓冲区
@@ -255,6 +292,10 @@
 
   // 搜索符合条件的门店
   const searchFitShop = async (name, range) => {
+    if (!props.map.hasLayer(MyCustomMap.editableLayers)) {
+      MyCustomMap.editableLayers.clearLayers()
+      MyCustomMap.editableLayers.addTo(props.map)
+    }
     // console.log(layers.aimMarker)
     // clearLayer()
     layers.bufferRegion.clearLayers()
@@ -295,7 +336,6 @@
   const reset = () => {
     form.name = ""
     form.range = 3
-    form.shopNum = 10
   }
 
   // 绑定缓冲区图层
@@ -312,7 +352,7 @@
       distance: range,
     })
     let bufferLayerBind = L.geoJSON(bufferLayer)
-      .bindPopup("三公里", { autoClose: false, closeOnClick: false })
+      .bindTooltip("三公里", { offset: L.point([40, 40]), direction: "top", permanent: true })
       .openPopup()
     props.map.fitBounds(bufferLayerBind.getBounds())
     layers.bufferRegion.addLayer(bufferLayerBind).addTo(MyCustomMap.editableLayers)
@@ -349,18 +389,25 @@
       props.map.removeLayer(layers.guideLayer)
     }
 
+    const aimLatLng = layers.aimMarker.getLatLng()
+    activeNames.value = ["start"]
+    // console.log(aimLatLng)
     // 最近设施分析
     let facilityPathList = await closestFacilitiesAnalyst({
-      eventPoint: layers.aimMarker.getLatLng(),
+      eventPoint: aimLatLng,
       facilityPonit: serviceAreaLatlng,
       facilityNum: 1,
     })
-    // console.log(serviceAreaLatlng)
-    let [route, guide] = await getDeliveryRoute(facilityPathList)
 
+    treeselect.data = facilityPathList[0].pathGuideItems.features
+    // console.log(facilityPathList)
+    let [point, route, guide] = await getDeliveryRoute(facilityPathList)
+    treeselect.shopName = point[0].name
+
+    // 为人物移动添加首尾坐标
     route[0].unshift(guide[0].latlngs[0])
     route[0].push(guide[0].latlngs[1])
-    // let ant = antPath([guide[0].latlngs])
+
     // console.log(layers.aimMarker)
     console.log(route, guide)
     treeselect.diliveryShop = guide[0].routeGuide
@@ -383,6 +430,7 @@
     layers.animateMarker = L.animatedMarker(route[0], {
       icon: walkIcon,
       interval: 400,
+      loop: false,
       isPlay: true,
       autoStart: true,
     }).addTo(MyCustomMap.editableLayers)
@@ -403,6 +451,7 @@
       // return L.featureGroup([...facilities, ...pathGuideItems, ...facilitiesRoute])
       // return await Promise.resolve(L.featureGroup([...pathGuideItems]))
       return await Promise.all([
+        getfacilitiesPoint(facilityPathList),
         getfacilitiesRoute(facilityPathList),
         getRouteGuide(facilityPathList, layers.aimMarker.getLatLng()),
       ]).catch(err => Promise.reject(err))
@@ -455,7 +504,8 @@
 
   const clearLayer = () => {
     if (!MyCustomMap.editableLayers) return
-    emits("shopData", data)
+    emits("shopData", null)
+    treeselect.diliveryPoint = null
     props.map.removeLayer(MyCustomMap.editableLayers)
     MyCustomMap.editableLayers.clearLayers()
     layers.regionMarkers.clearLayers()
@@ -469,6 +519,8 @@
 
   const clearAllLayer = () => {
     if (!MyCustomMap.editableLayers) return
+    emits("shopData", null)
+    treeselect.diliveryPoint = null
     props.map.removeLayer(MyCustomMap.editableLayers)
     MyCustomMap.editableLayers.clearLayers()
     // layers.aimMarker.clearLayers()
@@ -476,6 +528,11 @@
     MyCustomMap.editableLayers.addTo(props.map)
   }
 
+  const changeLatLng = e => {
+    // console.log(e)
+    let latlng = e.target.getLatLng()
+    treeselect.diliveryPoint = latlng
+  }
   watch(
     () => form.range,
     debounce(async function (newRange) {
@@ -499,8 +556,15 @@
     }, 800)
   )
 
+  // const change = computed(() => {
+  //   console.log(props.status)
+  //   formShow.value = false
+  //   return props.status + "1"
+  // })
+
   onUpdated(() => {
     if (!props.map.hasLayer(MyCustomMap.editableLayers)) {
+      MyCustomMap.editableLayers.clearLayers()
       MyCustomMap.editableLayers.addTo(props.map)
     }
     console.log("onUpdated")
@@ -551,13 +615,28 @@
     }
     .start-end {
       position: fixed;
-      max-width: 300px;
-      scroll-behavior: auto;
+      min-width: 400px;
+      overflow-y: auto;
+      background: #fff;
       height: 200px;
       margin: 0 10px;
-      left: 50%;
+      left: 45%;
       bottom: 0px;
       z-index: 5;
+      .start {
+        text-align: left;
+        padding-left: 5px;
+        .step:hover {
+          cursor: pointer;
+          background-color: rgb(244, 244, 244);
+        }
+        .latlng {
+        }
+      }
+      .end {
+        text-align: left;
+        padding-left: 5px;
+      }
     }
   }
 </style>

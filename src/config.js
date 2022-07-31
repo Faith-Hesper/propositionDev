@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-06-20 19:23
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-28 21:13
+ * @LastEditTime: 2022-07-31 09:39
  * @Description:
  */
 window.BASE_CONFIG = {
@@ -12,6 +12,7 @@ window.BASE_CONFIG = {
     minZoom: 2,
     maxZoom: 18,
     zoom: 12,
+    zoomControl: false,
     map_crs: "EPSG4326",
     // maxBounds: [],
     baseMapLayer: [
@@ -36,5 +37,7 @@ window.BASE_CONFIG = {
       "http://localhost:8090/iserver/services/spatialAnalysis-Changchun/restjsr/spatialanalyst",
     newworkServiceUrl:
       "http://localhost:8090/iserver/services/transportationAnalyst-ChengduFresh/rest/networkanalyst/Network@ChengduFresh",
+    traffictransferanalystUrl:
+      "http://localhost:8090/iserver/services/traffictransferanalyst-sample/restjsr/traffictransferanalyst/Traffic-Changchun",
   },
 }

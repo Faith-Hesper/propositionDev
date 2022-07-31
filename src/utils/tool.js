@@ -2,12 +2,13 @@
  * @Author: Faith
  * @Date: 2022-07-17 14:05
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-24 08:29
+ * @LastEditTime: 2022-07-31 16:46
  * @Description:
  */
 import { searchBySql } from "@/utils/map.js"
 
 function arrFeatureToGeoJson(arr) {
+  // console.log(arr)
   return {
     type: "FeatureCollection",
     features: arr,
@@ -74,16 +75,20 @@ function cacheShopData() {
 function throttle(fn, delay = 200) {
   let timer = null
   return function () {
-    if (timer) retrun
-    timer = setTimeout(() => {
-      fn.apply(this, arguments)
+    const context = this
+    const args = arguments
+    if (timer) {
+      clearTimeout(timer)
+    }
+    timer = setTimeout(function () {
       timer = null
+      fn.apply(context, args)
     }, delay)
   }
 }
 
 // 防抖
-function debounce(fn, wait = 200) {
+function debounce(fn, delay = 200) {
   let timer = null
   return function () {
     const context = this
@@ -91,7 +96,7 @@ function debounce(fn, wait = 200) {
     clearTimeout(timer)
     timer = setTimeout(() => {
       fn.apply(context, args)
-    }, wait)
+    }, delay)
   }
 }
 export { arrFeatureToGeoJson, randomColor, cacheShopData, throttle, debounce }

@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-16 21:33
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-28 20:21
+ * @LastEditTime: 2022-07-31 16:31
  * @Description:
  */
 
@@ -75,17 +75,22 @@ const getServiceArea = async ({ serviceArea, name = "" }) => {
 
 // 获取设施点 marker array
 const getfacilitiesPoint = async facilityPathList => {
-  return await new Promise((resolve, reject) => {
-    // 最近设施点
-    let facilities = facilityPathList.map(facilityPath => {
-      // console.log(facilityPath)
-      let facility = facilityPath.facility
-      let facilityMarkers = L.marker([facility.y, facility.x], { icon: aimIcon })
-      // console.log(facility)
-      return facilityMarkers
-    })
-    resolve(facilities)
+  // 最近设施点
+  let facilities = facilityPathList.map(async facilityPath => {
+    // console.log(facilityPath)
+    let facility = facilityPath.facility
+    let latlng = L.latLng(facility.y, facility.x)
+    // console.log(latlng)
+    let facilityMarkers = L.marker(latlng, { icon: aimIcon })
+    let { features } = await searchByGeometry({ geometry: facilityMarkers })
+
+    let name = features[0].properties.NAME
+
+    return { name: name, latlng: latlng }
   })
+  return await Promise.all(facilities)
+  // console.log(facilities)
+  // resolve(facilities)
 }
 
 // 获取路线 主干线路
@@ -124,6 +129,7 @@ const getRouteGuide = async (facilityPathList, aimLatLng) => {
       }
     })
 
+    // 去除首尾部分的图层
     let guideLayer = L.geoJSON(facilityPath.pathGuideItems, {
       pointToLayer: (point, latlng) => {
         index++

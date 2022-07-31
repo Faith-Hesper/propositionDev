@@ -38,9 +38,9 @@
         @rectangleLayer="rectangleLayer"
         @polygonLayer="polygonLayer"
         @markerLayer="markerLayer"
-      ></Draw>
+      >
+      </Draw>
     </div>
-    <!-- </div> -->
   </div>
 </template>
 
@@ -129,6 +129,10 @@
 
   // 框选查询
   const rectangleLayer = async resultLayer => {
+    if (!props.map.hasLayer(MyCustomMap.editableLayers)) {
+      MyCustomMap.editableLayers.clearLayers()
+      MyCustomMap.editableLayers.addTo(props.map)
+    }
     MyCustomMap.editableLayers.clearLayers()
     // 绘制图层
     MyCustomMap.editableLayers.addLayer(resultLayer)
@@ -142,6 +146,10 @@
 
   // 多边形查询
   const polygonLayer = async resultLayer => {
+    if (!props.map.hasLayer(MyCustomMap.editableLayers)) {
+      MyCustomMap.editableLayers.clearLayers()
+      MyCustomMap.editableLayers.addTo(props.map)
+    }
     // fullscreenLoading.value = true
     MyCustomMap.editableLayers.clearLayers()
     MyCustomMap.editableLayers.addLayer(resultLayer)
@@ -155,6 +163,14 @@
   }
 
   const markerLayer = async resultLayer => {
+    if (!props.map.hasLayer(MyCustomMap.editableLayers)) {
+      MyCustomMap.editableLayers.clearLayers()
+      MyCustomMap.editableLayers.addTo(props.map)
+    }
+    if (MyCustomMap.aimMarkerLayer) {
+      MyCustomMap.editableLayers.removeLayer(MyCustomMap.aimMarkerLayer)
+      // layers.aimMarker.remove()
+    }
     MyCustomMap.editableLayers.clearLayers()
     // console.log(bufferLayer)
     MyCustomMap.aimMarkerLayer = null
@@ -223,13 +239,28 @@
     formatShopData(fitResultLayerArr)
     // console.log(latlngArray, fitResultLayerArr)
     let fitResultLayer = arrFeatureToGeoJson(fitResultLayerArr)
-    let fitResultLayerBind = geoJsonBind(fitResultLayer)
+    let fitResultLayerBind = geoMarkerBind(fitResultLayer)
     console.log(fitResultLayerBind)
 
     MyCustomMap.markersLayer.addLayer(fitResultLayerBind).addTo(MyCustomMap.editableLayers)
   }
 
   const geoJsonBind = features => {
+    return L.geoJSON(features, {
+      pointToLayer: (feature, latLng) => {
+        console.log(latLng)
+        let marker = L.marker(latLng, { icon: greenIcon }).bindPopup(`
+    <div class="shop">
+    <p>店名：${feature.properties.NAME}</p>
+    <p>品类：${feature.properties.CATEGORY}</p>
+    <p>价格：${feature.properties.PRICE}元/kg</p>
+    </div>
+    `)
+        return marker
+      },
+    })
+  }
+  const geoMarkerBind = features => {
     return L.geoJSON(features, {
       pointToLayer: (feature, latLng) => {
         let latlng = [latLng.lat, latLng.lng].reverse()
