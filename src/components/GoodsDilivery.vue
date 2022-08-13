@@ -597,7 +597,9 @@
     if (newVal === true) {
       clearAllLayer()
       formShow.value = false
-      changeStatus()
+      setTimeout(() => {
+        changeStatus()
+      }, 2000)
     }
   })
   onUnmounted(() => {

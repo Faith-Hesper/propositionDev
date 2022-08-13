@@ -314,7 +314,9 @@
     if (newVal === true) {
       MyCustomMap.editableLayers.clearLayers()
       formShow.value = false
-      changeStatus()
+      setTimeout(() => {
+        changeStatus()
+      }, 2000)
     }
   })
 </script>
