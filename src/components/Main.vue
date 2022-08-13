@@ -16,12 +16,15 @@
     closestFacilitiesAnalyst,
   } from "@/utils/map.js"
   import { walkIcon, pointIcon, marketIcon } from "@/utils/Icon.js"
-  import { nextTick, onMounted, reactive, ref, shallowReactive } from "vue"
+  import { nextTick, onMounted, reactive, ref, shallowReactive, provide } from "vue"
 
   const fullscreenLoading = ref(false)
   const listLoading = ref(false)
   const diliveryClear = ref(false)
-
+  function changeStatus() {
+    diliveryClear.value = false
+  }
+  provide("clearlayer", { diliveryClear, changeStatus })
   const drawBtns = [
     {
       id: 0,
@@ -191,19 +194,20 @@
     MyCustomMap.editableLayers.clearLayers()
     let layerIndex = 0
     MyCustomMap.shopData = []
-    MyCustomMap.map.eachLayer(layer => {
-      layerIndex++
-      if (layerIndex >= 4) {
-        // let layers = layer.getLayers()
-        // console.log(layer)
-        if (layer._layers) {
-          // layer.clearLayers()
-          diliveryClear.value = true
-        }
-        MyCustomMap.map.removeLayer(layer)
-      }
-      // console.log(layer)
-    })
+    diliveryClear.value = true
+    // MyCustomMap.map.eachLayer(layer => {
+    //   layerIndex++
+    //   if (layerIndex >= 4) {
+    //     // let layers = layer.getLayers()
+    //     // console.log(layer)
+    //     if (layer._layers) {
+    //       // layer.clearLayers()
+    //       diliveryClear.value = true
+    //     }
+    //     MyCustomMap.map.removeLayer(layer)
+    //   }
+    //   // console.log(layer)
+    // })
   }
   onMounted(() => {
     // map = await mapObject('map')
@@ -262,7 +266,6 @@
               @shopData="showShopList"
               @listLoading="changeLoading"
               :map="MyCustomMap.map"
-              :status="diliveryClear"
             ></GoodsDilivery>
           </template>
         </CardContainer>

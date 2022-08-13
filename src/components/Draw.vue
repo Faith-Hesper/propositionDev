@@ -16,7 +16,7 @@
 <script setup>
   import "leaflet-draw"
   import "@/utils/L.draw-local"
-  import { onUnmounted, ref, reactive } from "vue"
+  import { onUnmounted, ref, reactive, onBeforeUnmount } from "vue"
   import { eventIcon } from "@/utils/map.js"
   const props = defineProps({
     map: { type: Object, default: () => null },
@@ -84,7 +84,7 @@
       }
     })
     props.map.on("contextmenu", () => {
-      // props.map.off("draw:markercontext")
+      // props.map.off("contextmenu")
       if (draw.type === "marker") {
         cancel.value = false
       }
@@ -152,6 +152,13 @@
         break
     }
   }
+
+  onBeforeUnmount(() => {
+    // props.map.on("draw:created")
+    // props.map.off("draw:drawstop")
+    // props.map.off("contextmenu")
+    // draw.drawControl.disable()
+  })
 </script>
 
 <style lang="less" scoped>

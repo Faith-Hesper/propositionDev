@@ -52,10 +52,11 @@
   import { walkIcon, pointIcon, marketIcon, startIcon } from "@/utils/Icon.js"
   import { arrFeatureToGeoJson, debounce } from "@/utils/tool.js"
 
-  import { watch, reactive, ref, shallowReactive } from "vue"
+  import { watch, reactive, ref, shallowReactive, inject } from "vue"
   const props = defineProps({ map: { type: Object, default: () => null } })
   const emits = defineEmits(["listLoading", "shopData"])
   const formShow = ref(false)
+  const { diliveryClear, changeStatus } = inject("clearlayer")
   const MyCustomMap = shallowReactive({
     control: null,
     editableLayers: null,
@@ -308,6 +309,14 @@
       }, 500)
     }, 800)
   )
+
+  watch(diliveryClear, function (newVal) {
+    if (newVal === true) {
+      MyCustomMap.editableLayers.clearLayers()
+      formShow.value = false
+      changeStatus()
+    }
+  })
 </script>
 
 <style lang="less" scoped>

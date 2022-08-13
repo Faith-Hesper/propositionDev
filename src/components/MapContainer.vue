@@ -55,7 +55,4 @@
     right: 0;
     z-index: 1;
   }
-  .leaflet-control-layers-list {
-    position: absolute;
-  }
 </style>

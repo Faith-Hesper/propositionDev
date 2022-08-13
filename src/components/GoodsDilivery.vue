@@ -98,6 +98,7 @@
   import {
     computed,
     nextTick,
+    h,
     onMounted,
     onUnmounted,
     onUpdated,
@@ -105,6 +106,7 @@
     ref,
     shallowReactive,
     watch,
+    inject,
   } from "vue"
 
   const props = defineProps({
@@ -113,7 +115,7 @@
   })
   const emits = defineEmits(["listLoading", "shopData"])
   const active = ref(0)
-  const formShow = ref(false)
+  const formShow = ref(false) //控制表单
   const statusFitShop = ref(false)
   const loading = ref(false)
   const activeNames = ref(["end"])
@@ -122,6 +124,7 @@
     editableLayers: null,
   })
 
+  const { diliveryClear, changeStatus } = inject("clearlayer")
   const layers = shallowReactive({
     aimMarker: null, // 配送点
     bufferRegion: null, // 缓冲区
@@ -289,7 +292,7 @@
       fitResult.latlngArray = latlngArray
       fitResult.fitResultLayerArr = fitResultLayerArr
       ElNotification({
-        title: "Title",
+        title: "Notification",
         message: h("i", { style: "color: teal" }, "标记可拖拽"),
       })
     } catch (error) {}
@@ -590,7 +593,13 @@
   })
 
   onMounted(() => {})
-
+  watch(diliveryClear, function (newVal) {
+    if (newVal === true) {
+      clearAllLayer()
+      formShow.value = false
+      changeStatus()
+    }
+  })
   onUnmounted(() => {
     clearAllLayer()
   })
