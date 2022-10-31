@@ -240,7 +240,7 @@
     formatShopData(fitResultLayerArr)
     // console.log(latlngArray, fitResultLayerArr)
     let fitResultLayer = arrFeatureToGeoJson(fitResultLayerArr)
-    let fitResultLayerBind = geoMarkerBind(fitResultLayer)
+    let fitResultLayerBind = geoJsonBind(fitResultLayer)
     console.log(fitResultLayerBind)
 
     MyCustomMap.markersLayer.addLayer(fitResultLayerBind).addTo(MyCustomMap.editableLayers)

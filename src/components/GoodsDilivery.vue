@@ -215,8 +215,9 @@
       e.layer.openPopup()
       let latlng = e.sourceTarget.getLatLng()
 
-      treeselect.diliveryShop = latlng
+      // 配送商店
       document.querySelector(".pre").onclick = function () {
+        treeselect.diliveryShop = latlng
         // console.log(latlng)
         setTimeout(() => {
           e.sourceTarget.closePopup()
@@ -540,6 +541,10 @@
     layers.regionMarkers.clearLayers()
     MyCustomMap.editableLayers.addTo(props.map)
   }
+
+  // clearAllLayer: debounce(function () {
+  //   console.log(form.range, 1)
+  // })
 
   // 鼠标拖拽 marker 改变视图中显示的坐标数据
   const changeLatLng = e => {

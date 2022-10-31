@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-17 14:05
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-31 21:40
+ * @LastEditTime: 2022-10-16 16:20
  * @Description:
  */
 import { searchBySql } from "@/utils/map.js"
@@ -72,6 +72,20 @@ function cacheShopData() {
   })
 }
 
+// 防抖
+function debounce(fn, delay = 200) {
+  let timer = null
+  return function () {
+    const context = this
+    const args = arguments
+    console.log(args)
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      fn.apply(context, args)
+    }, delay)
+  }
+}
+
 // 节流
 function throttle(fn, delay = 200) {
   let timer = null
@@ -79,25 +93,12 @@ function throttle(fn, delay = 200) {
     const context = this
     const args = arguments
     if (timer) {
-      clearTimeout(timer)
+      timer = setTimeout(function () {
+        fn.apply(context, args)
+        timer = null
+      }, delay)
     }
-    timer = setTimeout(function () {
-      timer = null
-      fn.apply(context, args)
-    }, delay)
   }
 }
 
-// 防抖
-function debounce(fn, delay = 200) {
-  let timer = null
-  return function () {
-    const context = this
-    const args = arguments
-    clearTimeout(timer)
-    timer = setTimeout(() => {
-      fn.apply(context, args)
-    }, delay)
-  }
-}
 export { arrFeatureToGeoJson, randomColor, cacheShopData, throttle, debounce }

@@ -2,7 +2,7 @@
  * @Author: Faith
  * @Date: 2022-07-10 18:34
  * @LastAuthor: Faith
- * @LastEditTime: 2022-07-21 20:46
+ * @LastEditTime: 2022-10-16 15:59
  * @Description:
  */
 
@@ -97,12 +97,12 @@ function dragEvent(el, binding) {
 
 // 拖拽的指令
 const drag = {
-  beforeMount(el, binding) {
+  mounted(el, binding) {
     return dragEvent(el, binding)
   },
-  updated(el, binding) {
-    return dragEvent(el, binding)
-  },
+  // updated(el, binding) {
+  //   return dragEvent(el, binding)
+  // },
 }
 // 挂载，注册
 const directives = {
